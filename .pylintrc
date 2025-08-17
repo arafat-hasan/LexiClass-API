@@ -1,0 +1,241 @@
+[MASTER]
+# Python version for pylint
+py-version = 3.9
+
+# Add any Python module names where the import order is known to be broken
+known-third-party=celery,fastapi,pydantic,sqlalchemy
+
+# Files or directories to be skipped. They should be base names, not paths
+ignore=CVS,.git,__pycache__,migrations,alembic
+
+# Files or directories matching the regex patterns are skipped
+ignore-patterns=
+
+# Pickle collected data for later comparisons
+persistent=yes
+
+# List of plugins (as comma separated values of python modules names) to load
+load-plugins=
+
+# Use multiple processes to speed up Pylint (use "0" for auto)
+jobs=0
+
+# Allow loading of arbitrary C extensions
+unsafe-load-any-extension=no
+
+# Allow optimization of some AST trees
+optimize-ast=no
+
+[MESSAGES CONTROL]
+# Only show warnings with the listed confidence levels
+confidence=HIGH,CONTROL_FLOW,INFERENCE,INFERENCE_FAILURE,UNDEFINED
+
+# Disable specific warnings
+disable=C0111,  # missing-docstring
+        C0103,  # invalid-name (for variables)
+        C0302,  # too-many-lines
+        C0330,  # wrong-hanging-indentation
+        W0511,  # fixme
+        R0903,  # too-few-public-methods (for Pydantic models)
+        R0913,  # too-many-arguments
+        W0703,  # broad-except
+        R0901,  # too-many-ancestors (for FastAPI routes)
+        W0621,  # redefined-outer-name (for FastAPI dependencies)
+        E1101,  # no-member (for SQLAlchemy)
+        R0801,  # duplicate-code
+        W0707,  # raise-missing-from
+        C0114,  # missing-module-docstring
+        C0115,  # missing-class-docstring
+        C0116   # missing-function-docstring
+
+[REPORTS]
+# Set the output format
+output-format=text
+
+# Include a brief explanation of each error
+msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}
+
+# Files with syntax errors are reported first
+files-output=no
+
+# Tells whether to display a full report or only the messages
+reports=no
+
+# Python expression which should return a note less than 10
+evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)
+
+# Template used to display messages
+msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}
+
+[BASIC]
+# Regular expression which should only match function or class names
+function-rgx=[a-z_][a-z0-9_]{2,50}$
+
+# Regular expression which should only match correct variable names
+variable-rgx=[a-z_][a-z0-9_]{2,50}$
+
+# Regular expression which should only match correct constant names
+const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__))$
+
+# Regular expression which should only match correct attribute names
+attr-rgx=[a-z_][a-z0-9_]{2,50}$
+
+# Regular expression which should only match correct argument names
+argument-rgx=[a-z_][a-z0-9_]{2,50}$
+
+# Regular expression which should only match correct class names
+class-rgx=[A-Z_][a-zA-Z0-9]+$
+
+# Regular expression which should only match correct module level names
+module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
+
+# Regular expression which should only match correct method names
+method-rgx=[a-z_][a-z0-9_]{2,50}$
+
+# Good variable names which should always be accepted
+good-names=i,j,k,ex,Run,_,id,db
+
+# Regular expression which should only match functions or classes name which do
+# not require a docstring
+no-docstring-rgx=__.*__
+
+# Minimum line length for functions/classes that require docstrings
+docstring-min-length=10
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=100
+
+# Maximum number of lines in a module
+max-module-lines=2000
+
+# String used as indentation unit
+indent-string='    '
+
+# Number of spaces of indent required inside a hanging or continued line
+indent-after-paren=4
+
+# Expected format of line ending
+expected-line-ending-format=LF
+
+[LOGGING]
+# Format style used to check logging format string
+logging-format-style=new
+
+# Logging modules to check that the string format arguments are in logging
+# function parameter format
+logging-modules=logging
+
+[MISCELLANEOUS]
+# List of note tags to take into consideration
+notes=FIXME,XXX,TODO
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=4
+
+# Ignore comments when computing similarities
+ignore-comments=yes
+
+# Ignore docstrings when computing similarities
+ignore-docstrings=yes
+
+# Ignore imports when computing similarities
+ignore-imports=yes
+
+[SPELLING]
+# Spelling dictionary name
+spelling-dict=
+
+# List of comma separated words that should not be checked
+spelling-ignore-words=
+
+# A path to a file that contains private dictionary
+spelling-private-dict-file=
+
+# Tells whether to store unknown words to indicated private dictionary in
+# --spelling-private-dict-file option instead of raising a message
+spelling-store-unknown-words=no
+
+[TYPECHECK]
+# List of module names for which member attributes should not be checked
+ignored-modules=numpy,tensorflow,torch,cv2,PIL
+
+# List of classes names for which member attributes should not be checked
+ignored-classes=SQLObject,SQLAlchemy,scoped_session,Session,Base
+
+# List of members which are set dynamically and missed by pylint inference
+# system, and so shouldn't trigger E1101 when accessed.
+generated-members=REQUEST,acl_users,aq_parent,objects,DoesNotExist,id,pk,_meta,Base,Column,Integer,String,DateTime,relationship,sessionmaker,Session,Query
+
+# List of decorators that create context managers from functions
+contextmanager-decorators=contextlib.contextmanager,contextlib.asynccontextmanager
+
+[VARIABLES]
+# Tells whether we should check for unused import in __init__ files
+init-import=no
+
+# A regular expression matching the beginning of the name of dummy variables
+dummy-variables-rgx=_$|dummy
+
+# List of additional names to consider as builtins
+additional-builtins=
+
+[IMPORTS]
+# Allow wildcard imports from modules that define __all__
+allow-wildcard-with-all=no
+
+# Analyse import fallback blocks
+analyse-fallback-blocks=no
+
+# Deprecated modules which should not be used
+deprecated-modules=regsub,TERMIOS,Bastion,rexec
+
+# Force import order to recognize a module as part of a third party library
+known-third-party=enchant,fastapi,sqlalchemy,pydantic,celery,alembic,pytest
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=10
+
+# Maximum number of locals for function / method body
+max-locals=25
+
+# Maximum number of return / yield for function / method body
+max-returns=11
+
+# Maximum number of branch for function / method body
+max-branches=27
+
+# Maximum number of statements in function / method body
+max-statements=100
+
+# Maximum number of parents for a class (see R0901)
+max-parents=7
+
+# Maximum number of attributes for a class (see R0902)
+max-attributes=11
+
+# Minimum number of public methods for a class (see R0903)
+min-public-methods=0
+
+# Maximum number of public methods for a class (see R0904)
+max-public-methods=25
+
+[CLASSES]
+# List of method names used to declare (i.e. assign) instance attributes
+defining-attr-methods=__init__,__new__,setUp
+
+# List of valid names for the first argument in a class method
+valid-classmethod-first-arg=cls
+
+# List of valid names for the first argument in a metaclass class method
+valid-metaclass-classmethod-first-arg=mcs
+
+# List of member names, which should be excluded from the protected access
+# warning
+exclude-protected=_asdict,_fields,_replace,_source,_make
+
+[EXCEPTIONS]
+# Exceptions that will emit a warning when being caught
+overgeneral-exceptions=Exception

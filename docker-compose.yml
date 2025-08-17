@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src  # For development hot-reload
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=lexiclass
+      - POSTGRES_PASSWORD=lexiclass
+      - POSTGRES_DB=lexiclass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SECRET_KEY=dev_secret_key_change_in_production
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build:
+      context: ../LexiClass-Worker
+      dockerfile: Dockerfile
+    volumes:
+      - ../LexiClass-Worker/src:/app/src  # For development hot-reload
+      - ml_data:/data
+    environment:
+      - LEXICLASS_ENVIRONMENT=development
+      - LEXICLASS_CELERY__BROKER_URL=redis://redis:6379/0
+      - LEXICLASS_CELERY__RESULT_BACKEND=redis://redis:6379/0
+      - LEXICLASS_LOG_LEVEL=DEBUG
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:14-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=lexiclass
+      - POSTGRES_PASSWORD=lexiclass
+      - POSTGRES_DB=lexiclass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lexiclass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  ml_data:
