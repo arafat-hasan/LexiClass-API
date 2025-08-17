@@ -6,6 +6,8 @@ from uuid import uuid4
 
 from celery import Task
 
+from lexiclass_worker.core.queue_config import QueueName
+
 from ..db.session import async_session
 from ..services.documents import DocumentService
 from ..services.projects import ProjectService
@@ -43,7 +45,11 @@ class PredictionTask(Task):
         return self._project_service
 
 
-@celery_app.task(base=PredictionTask, bind=True)
+@celery_app.task(
+    base=PredictionTask,
+    bind=True,
+    queue=QueueName.PREDICTION,
+)
 async def predict_documents(
     self,
     project_id: str,

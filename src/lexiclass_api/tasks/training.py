@@ -5,6 +5,8 @@ from typing import Dict, List, Optional
 
 from celery import Task
 
+from lexiclass_worker.core.queue_config import QueueName
+
 from ..db.session import async_session
 from ..services.documents import DocumentService
 from ..services.projects import ProjectService
@@ -42,7 +44,11 @@ class TrainingTask(Task):
         return self._project_service
 
 
-@celery_app.task(base=TrainingTask, bind=True)
+@celery_app.task(
+    base=TrainingTask,
+    bind=True,
+    queue=QueueName.TRAINING,
+)
 async def train_model(
     self,
     project_id: str,

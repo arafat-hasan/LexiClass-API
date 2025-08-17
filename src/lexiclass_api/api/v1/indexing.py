@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_current_user, get_db
+from ...core.worker import worker
 from ...models.user import User
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
-from ...tasks.indexing import index_documents
 
 router = APIRouter()
 
@@ -60,8 +60,13 @@ async def trigger_indexing(
                 detail="One or more documents not found",
             )
 
-    # Trigger indexing task
-    task = index_documents.delay(
+        # Update document status to pending
+        for doc in docs:
+            doc.status = "pending"
+        await db.commit()
+
+    # Submit task to worker
+    task = worker.index_documents(
         project_id=project_id,
         document_ids=document_ids,
         is_incremental=is_incremental,
@@ -70,7 +75,7 @@ async def trigger_indexing(
     return {
         "task_id": task.id,
         "status": "pending",
-        "message": "Indexing task started",
+        "message": "Indexing task submitted to worker",
     }
 
 
@@ -120,3 +125,23 @@ async def get_index_status(
         "pending_documents": pending,
         "failed_documents": failed,
     }
+
+
+@router.get(
+    "/tasks/{task_id}",
+    tags=["indexing"],
+)
+async def get_task_status(
+    task_id: str,
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Get status of a specific task.
+
+    Args:
+        task_id: Task ID
+        current_user: Current user
+
+    Returns:
+        Task status information
+    """
+    return worker.get_task_status(task_id)
