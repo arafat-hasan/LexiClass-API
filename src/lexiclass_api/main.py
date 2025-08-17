@@ -9,19 +9,15 @@ from prometheus_client import make_asgi_app
 
 from .api.v1.router import api_router
 from .core.config import settings
-from .core.logging import setup_logging
+
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Setup
-    setup_logging()
     logger = logging.getLogger(__name__)
-    logger.info(
-        "Starting application",
-        extra={"version": settings.VERSION},
-    )
+    logger.info("Starting application")
     yield
     # Cleanup
     logger.info("Shutting down application")

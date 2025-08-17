@@ -5,9 +5,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.deps import get_current_user, get_db
+from ...core.deps import get_db
 from ...core.worker import worker
-from ...models.user import User
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
 
@@ -24,7 +23,7 @@ async def trigger_indexing(
     document_ids: Optional[List[str]] = Query(None, max_items=1000),
     is_incremental: bool = True,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> dict:
     """Trigger document indexing.
 
@@ -33,7 +32,7 @@ async def trigger_indexing(
         document_ids: Optional list of document IDs to index
         is_incremental: Whether to perform incremental indexing
         db: Database session
-        current_user: Current user
+
 
     Returns:
         Task information
@@ -87,14 +86,14 @@ async def get_index_status(
     *,
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> dict:
     """Get indexing status for a project.
 
     Args:
         project_id: Project ID
         db: Database session
-        current_user: Current user
+
 
     Returns:
         Index status information
@@ -133,13 +132,13 @@ async def get_index_status(
 )
 async def get_task_status(
     task_id: str,
-    current_user: User = Depends(get_current_user),
+
 ) -> dict:
     """Get status of a specific task.
 
     Args:
         task_id: Task ID
-        current_user: Current user
+
 
     Returns:
         Task status information

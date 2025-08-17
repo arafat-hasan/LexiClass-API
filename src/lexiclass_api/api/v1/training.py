@@ -6,8 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.deps import get_current_user, get_db
-from ...models.user import User
+from ...core.deps import get_db
 from ...services.projects import ProjectService
 from ...tasks.training import train_model
 
@@ -29,7 +28,7 @@ async def trigger_training(
     project_id: str,
     params: Optional[TrainingParams] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> dict:
     """Trigger model training.
 
@@ -37,7 +36,7 @@ async def trigger_training(
         project_id: Project ID
         params: Optional training parameters
         db: Database session
-        current_user: Current user
+
 
     Returns:
         Task information
@@ -82,14 +81,14 @@ async def get_training_status(
     *,
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> dict:
     """Get training status.
 
     Args:
         project_id: Project ID
         db: Database session
-        current_user: Current user
+
 
     Returns:
         Training status information

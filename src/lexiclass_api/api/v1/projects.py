@@ -5,8 +5,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.deps import get_current_user, get_db
-from ...models.user import User
+from ...core.deps import get_db
 from ...schemas.project import Project, ProjectCreate, ProjectUpdate
 from ...services.projects import ProjectService
 
@@ -18,7 +17,7 @@ async def create_project(
     *,
     project_in: ProjectCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> Project:
     """Create new project."""
     service = ProjectService(db)
@@ -30,7 +29,7 @@ async def create_project(
 async def get_project(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> Project:
     """Get project by ID."""
     service = ProjectService(db)
@@ -47,7 +46,7 @@ async def get_project(
 async def list_projects(
     *,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
 ) -> List[Project]:
@@ -63,7 +62,7 @@ async def update_project(
     project_id: str,
     project_in: ProjectUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> Project:
     """Update project."""
     service = ProjectService(db)
@@ -82,7 +81,7 @@ async def delete_project(
     *,
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> None:
     """Delete project."""
     service = ProjectService(db)

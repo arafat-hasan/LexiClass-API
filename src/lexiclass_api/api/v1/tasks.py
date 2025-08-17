@@ -6,8 +6,7 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.deps import get_current_user, get_db
-from ...models.user import User
+from ...core.deps import get_db
 from ...services.projects import ProjectService
 from ...worker import celery_app
 
@@ -20,13 +19,13 @@ router = APIRouter()
 )
 async def get_task_status(
     task_id: str,
-    current_user: User = Depends(get_current_user),
+
 ) -> dict:
     """Get task status.
 
     Args:
         task_id: Task ID
-        current_user: Current user
+
 
     Returns:
         Task status information
@@ -59,14 +58,14 @@ async def list_project_tasks(
     *,
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> List[dict]:
     """List active tasks for a project.
 
     Args:
         project_id: Project ID
         db: Database session
-        current_user: Current user
+
 
     Returns:
         List of task information
@@ -115,13 +114,13 @@ async def list_project_tasks(
 )
 async def cancel_task(
     task_id: str,
-    current_user: User = Depends(get_current_user),
+
 ) -> None:
     """Cancel a running task.
 
     Args:
         task_id: Task ID
-        current_user: Current user
+
 
     Raises:
         HTTPException: If task not found or cannot be canceled

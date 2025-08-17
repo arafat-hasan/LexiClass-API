@@ -5,8 +5,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.deps import get_current_user, get_db
-from ...models.user import User
+from ...core.deps import get_db
 from ...schemas.document import Document
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
@@ -24,7 +23,7 @@ async def trigger_prediction(
     project_id: str,
     document_ids: Optional[List[str]] = Query(None, max_items=1000),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
 ) -> dict:
     """Trigger document prediction.
 
@@ -32,7 +31,7 @@ async def trigger_prediction(
         project_id: Project ID
         document_ids: Optional list of document IDs to predict
         db: Database session
-        current_user: Current user
+
 
     Returns:
         Task information
@@ -87,7 +86,7 @@ async def get_prediction_results(
     project_id: str,
     prediction_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
 ) -> List[Document]:
@@ -97,7 +96,7 @@ async def get_prediction_results(
         project_id: Project ID
         prediction_id: Prediction ID
         db: Database session
-        current_user: Current user
+
         skip: Number of documents to skip
         limit: Maximum number of documents to return
 
@@ -143,7 +142,7 @@ async def get_latest_predictions(
     *,
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
 ) -> List[Document]:
@@ -152,7 +151,7 @@ async def get_latest_predictions(
     Args:
         project_id: Project ID
         db: Database session
-        current_user: Current user
+
         skip: Number of documents to skip
         limit: Maximum number of documents to return
 

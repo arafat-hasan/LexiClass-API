@@ -20,7 +20,8 @@ class Document(Base):
         index=True,
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    metadata: Mapped[dict] = mapped_column(
+    doc_metadata: Mapped[dict] = mapped_column(
+        "metadata",  # Keep the column name in database
         JSON,
         default=dict,
         nullable=False,

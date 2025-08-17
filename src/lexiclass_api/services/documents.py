@@ -38,7 +38,7 @@ class DocumentService:
                 project_id=project_id,
                 id=doc.id or str(i),  # Use provided ID or generate one
                 content=doc.content,
-                metadata=doc.metadata,
+                metadata=doc.doc_metadata,
                 label=doc.label,
                 status="pending",
             )

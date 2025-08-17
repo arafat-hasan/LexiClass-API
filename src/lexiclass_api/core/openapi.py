@@ -5,15 +5,6 @@ description = """
 
 LexiClass API is a powerful text classification service that provides RESTful endpoints for managing document classification projects, training models, and making predictions.
 
-## Authentication
-
-All API endpoints are protected and require authentication. To authenticate:
-
-1. Get your API token from the authentication endpoint
-2. Include the token in the Authorization header:
-   ```
-   Authorization: Bearer your-token-here
-   ```
 
 ## Rate Limiting
 

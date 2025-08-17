@@ -5,10 +5,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import (
     AnyHttpUrl,
-    EmailStr,
     PostgresDsn,
     RedisDsn,
-    SecretStr,
     field_validator,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,24 +28,16 @@ class Settings(BaseSettings):
     VERSION: str = "0.1.0"
     DESCRIPTION: str = "API service for document classification"
     DEBUG: bool = False
+    ENVIRONMENT: str = "development"
+    PORT: int = 8000
 
-    # Security
-    SECRET_KEY: SecretStr
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    ALGORITHM: str = "HS256"
-    ALLOWED_HOSTS: List[str] = ["*"]
-    CORS_ORIGINS: List[AnyHttpUrl] = []
+    # CORS Settings
+    CORS_ORIGINS_STR: str = "http://localhost:3000,http://localhost:8000"
     
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
-        """Parse CORS origins from string or list."""
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, list):
-            return v
-        raise ValueError(v)
+    @property
+    def CORS_ORIGINS(self) -> List[str]:
+        """Get list of CORS origins."""
+        return [origin.strip() for origin in self.CORS_ORIGINS_STR.split(",") if origin.strip()]
 
     # Database
     POSTGRES_HOST: str
@@ -81,6 +71,23 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: Optional[str] = None
     CELERY_BROKER_URL: Optional[RedisDsn] = None
     CELERY_RESULT_BACKEND: Optional[RedisDsn] = None
+    
+    # Celery Settings
+    CELERY_TASK_SERIALIZER: str = "json"
+    CELERY_RESULT_SERIALIZER: str = "json"
+    CELERY_ACCEPT_CONTENT: List[str] = ["json"]
+    CELERY_ENABLE_UTC: bool = True
+    CELERY_TASK_TRACK_STARTED: bool = True
+    CELERY_TASK_RETRY_BACKOFF: bool = True
+    CELERY_TASK_RETRY_JITTER: bool = True
+    CELERY_TASK_DEFAULT_RATE_LIMIT: str = "100/m"
+    CELERY_TASK_DEFAULT_RETRY_DELAY: int = 3
+    CELERY_TASK_MAX_RETRIES: int = 3
+    CELERY_TASK_SOFT_TIME_LIMIT: int = 600
+    CELERY_TASK_TIME_LIMIT: int = 1200
+    CELERY_WORKER_PREFETCH_MULTIPLIER: int = 4
+    CELERY_WORKER_MAX_TASKS_PER_CHILD: int = 1000
+    CELERY_WORKER_SEND_TASK_EVENTS: bool = True
 
     @field_validator("CELERY_BROKER_URL", "CELERY_RESULT_BACKEND", mode="before")
     @classmethod
@@ -103,15 +110,6 @@ class Settings(BaseSettings):
     MODELS_DIR: str = "models"
     INDEXES_DIR: str = "indexes"
     DOCUMENTS_DIR: str = "documents"
-
-    # Email
-    SMTP_TLS: bool = True
-    SMTP_HOST: Optional[str] = None
-    SMTP_PORT: Optional[int] = None
-    SMTP_USER: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
-    EMAILS_FROM_EMAIL: Optional[EmailStr] = None
-    EMAILS_FROM_NAME: Optional[str] = None
 
     # Logging
     LOG_LEVEL: str = "INFO"
@@ -140,12 +138,8 @@ class Settings(BaseSettings):
         },
     }
 
-    # First Superuser
-    FIRST_SUPERUSER_EMAIL: EmailStr
-    FIRST_SUPERUSER_PASSWORD: str
 
-    class Config:
-        case_sensitive = True
+
 
 
 settings = Settings()  # type: ignore
