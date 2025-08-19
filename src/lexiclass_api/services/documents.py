@@ -1,7 +1,9 @@
 """Document service."""
 
 from typing import List, Optional, Sequence
+import uuid
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +22,28 @@ class DocumentService:
         """
         self.db = db
 
+    async def _check_existing_ids(self, document_ids: List[str]) -> None:
+        """Check if any of the document IDs already exist.
+
+        Args:
+            document_ids: List of document IDs to check
+
+        Raises:
+            HTTPException: If any of the document IDs already exist
+        """
+        if not document_ids:
+            return
+
+        query = select(DocumentModel.id).where(DocumentModel.id.in_(document_ids))
+        result = await self.db.execute(query)
+        existing_ids = result.scalars().all()
+
+        if existing_ids:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Documents with IDs {existing_ids} already exist",
+            )
+
     async def create_bulk(
         self, project_id: str, documents_in: DocumentBulkCreate
     ) -> List[Document]:
@@ -32,17 +56,21 @@ class DocumentService:
         Returns:
             Created documents
         """
+        # Check for existing IDs
+        existing_ids = [doc.id for doc in documents_in.documents if doc.id is not None]
+        await self._check_existing_ids(existing_ids)
+
         # Create document models
         db_documents = [
             DocumentModel(
                 project_id=project_id,
-                id=doc.id or str(i),  # Use provided ID or generate one
+                id=doc.id or str(uuid.uuid4()),  # Use provided ID or generate UUID
                 content=doc.content,
-                metadata=doc.doc_metadata,
+                metadata=doc.metadata,
                 label=doc.label,
                 status="pending",
             )
-            for i, doc in enumerate(documents_in.documents)
+            for doc in documents_in.documents
         ]
 
         # Add to DB

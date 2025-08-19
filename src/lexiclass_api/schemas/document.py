@@ -2,8 +2,9 @@
 
 from datetime import datetime
 from typing import Dict, Optional
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class DocumentBase(BaseModel):
@@ -18,6 +19,17 @@ class DocumentCreate(DocumentBase):
     """Properties to receive on document creation."""
 
     id: Optional[str] = None
+
+    @field_validator("id")
+    @classmethod
+    def validate_id(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that the ID is a valid UUID if provided."""
+        if v is not None:
+            try:
+                UUID(v)
+            except ValueError:
+                raise ValueError("Document ID must be a valid UUID")
+        return v
 
 
 class DocumentUpdate(DocumentBase):
