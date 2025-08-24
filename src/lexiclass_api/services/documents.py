@@ -122,6 +122,33 @@ class DocumentService:
 
         return [Document.model_validate(doc) for doc in documents]
 
+    async def get_multi_by_ids(self, project_id: str, document_ids: List[str]) -> Sequence[Document]:
+        """Get multiple documents by their IDs.
+
+        Args:
+            project_id: Project ID
+            document_ids: List of document IDs to retrieve
+
+        Returns:
+            List of documents
+        """
+        query = (
+            select(DocumentModel)
+            .where(DocumentModel.project_id == project_id)
+            .where(DocumentModel.id.in_(document_ids))
+        )
+        result = await self.db.execute(query)
+        documents = result.scalars().all()
+
+        # Convert SQLAlchemy models to Pydantic models
+        return [
+            Document.model_validate({
+                **{k: v for k, v in doc.__dict__.items() if not k.startswith('_')},
+                'metadata': doc.doc_metadata  # Map doc_metadata to metadata for Pydantic
+            })
+            for doc in documents
+        ]
+
     async def delete_multi(self, project_id: str, document_ids: List[str]) -> None:
         """Delete multiple documents.
 
