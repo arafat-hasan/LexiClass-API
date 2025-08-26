@@ -37,7 +37,7 @@ def upgrade() -> None:
     )
     op.create_table('document',
     sa.Column('project_id', sa.String(), nullable=False),
-    sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('content_path', sa.String(512), nullable=False),
     sa.Column('metadata', sa.JSON(), nullable=False),
     sa.Column('label', sa.String(length=255), nullable=True),
     sa.Column('prediction', sa.String(length=255), nullable=True),

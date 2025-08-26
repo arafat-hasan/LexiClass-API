@@ -60,8 +60,14 @@ LexiClass API is a powerful text classification service that provides RESTful en
    ```
 
 5. Run database migrations:
+
+   Upgrade to head (this will recreate tables with the new schema):
    ```bash
    alembic upgrade head
+   ```
+   Downgrade to the base (this will drop all tables):
+   ```bash
+   alembic downgrade base
    ```
 
 6. Start development server:

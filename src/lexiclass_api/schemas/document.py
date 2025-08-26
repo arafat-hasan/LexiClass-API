@@ -10,15 +10,17 @@ from pydantic import BaseModel, Field, field_validator
 class DocumentBase(BaseModel):
     """Shared properties."""
 
-    content: str = Field(..., min_length=1)
     metadata: Dict = Field(default_factory=dict)
     label: Optional[str] = Field(None, max_length=255)
 
 
-class DocumentCreate(DocumentBase):
+class DocumentCreate(BaseModel):
     """Properties to receive on document creation."""
 
     id: Optional[str] = None
+    content: str = Field(..., min_length=1)
+    metadata: Dict = Field(default_factory=dict)
+    label: Optional[str] = Field(None, max_length=255)
 
     @field_validator("id")
     @classmethod
@@ -32,18 +34,25 @@ class DocumentCreate(DocumentBase):
         return v
 
 
-class DocumentUpdate(DocumentBase):
+
+
+
+class DocumentUpdate(BaseModel):
     """Properties to receive on document update."""
 
     content: Optional[str] = None
-    label: Optional[str] = None
+    metadata: Optional[Dict] = None
+    label: Optional[str] = Field(None, max_length=255)
 
 
-class DocumentInDBBase(DocumentBase):
+class DocumentInDBBase(BaseModel):
     """Base class for all models from DB."""
 
     id: str
     project_id: str
+    content_path: str
+    metadata: Dict = Field(default_factory=dict)
+    label: Optional[str] = Field(None, max_length=255)
     status: str
     prediction: Optional[str] = None
     confidence: Optional[float] = None
