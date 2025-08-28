@@ -44,7 +44,7 @@ class TaskInput(BaseModel):
 class IndexingInput(TaskInput):
     """Input schema for document indexing task."""
 
-    document_ids: Optional[List[str]] = Field(None, description="Optional list of document IDs to index")
+    documents_path: str = Field(..., description="Path to project's document storage directory")
     is_incremental: bool = Field(True, description="Whether to perform incremental indexing")
 
 
@@ -140,7 +140,7 @@ class IndexingTaskHandler(BaseTaskHandler):
     @property
     def task_name(self) -> str:
         """Get task name."""
-        return "lexiclass_worker.tasks.index_documents_task"
+        return "lexiclass_worker.tasks.index.index_documents_task"
 
     @property
     def input_schema(self) -> type[TaskInput]:
@@ -221,14 +221,14 @@ class WorkerClient:
     def index_documents(
         self,
         project_id: str,
-        document_ids: Optional[List[str]] = None,
+        documents_path: str,
         is_incremental: bool = True,
     ) -> AsyncResult:
         """Submit document indexing task to worker.
 
         Args:
             project_id: Project ID
-            document_ids: Optional list of document IDs to index
+            storage_path: Path to project's document storage directory
             is_incremental: Whether to perform incremental indexing
 
         Returns:
@@ -236,7 +236,7 @@ class WorkerClient:
         """
         input_data = IndexingInput(
             project_id=project_id,
-            document_ids=document_ids,
+            documents_path=documents_path,
             is_incremental=is_incremental,
         )
         return self._indexing.submit(input_data)

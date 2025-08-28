@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
 from ...core.worker import worker
+from ...core.config import settings
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
 
@@ -20,7 +21,6 @@ router = APIRouter()
 async def trigger_indexing(
     *,
     project_id: str,
-    document_ids: Optional[List[str]] = Query(None, max_items=1000),
     is_incremental: bool = True,
     db: AsyncSession = Depends(get_db),
 
@@ -29,7 +29,6 @@ async def trigger_indexing(
 
     Args:
         project_id: Project ID
-        document_ids: Optional list of document IDs to index
         is_incremental: Whether to perform incremental indexing
         db: Database session
 
@@ -49,25 +48,20 @@ async def trigger_indexing(
             detail="Project not found",
         )
 
-    # Verify documents exist if specific IDs provided
-    if document_ids:
-        doc_service = DocumentService(db)
-        docs = await doc_service.get_multi_by_ids(project_id, document_ids)
-        if len(docs) != len(document_ids):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="One or more documents not found",
-            )
+    # Update all documents status to pending
+    doc_service = DocumentService(db)
+    docs = await doc_service.get_multi(project_id)
+    for doc in docs:
+        doc.status = "pending"
+    await db.commit()
 
-        # Update document status to pending
-        for doc in docs:
-            doc.status = "pending"
-        await db.commit()
+    # Construct storage path
+    documents_path = str(settings.STORAGE_PATH.resolve() / settings.DOCUMENTS_DIR / project_id)
 
     # Submit task to worker
     task = worker.index_documents(
         project_id=project_id,
-        document_ids=document_ids,
+        documents_path=documents_path,
         is_incremental=is_incremental,
     )
 
