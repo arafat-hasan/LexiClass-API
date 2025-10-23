@@ -9,7 +9,7 @@ DEFAULT_PAGE_SIZE = 100  # Default number of documents per page
 MAX_BATCH_SIZE = 500  # Maximum number of documents in a bulk create operation
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -182,6 +182,49 @@ class DocumentService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error while fetching documents: {str(e)}"
+            ) from e
+
+    async def count(
+        self,
+        project_id: str,
+        *,
+        label: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> int:
+        """Count documents matching the given criteria.
+
+        Args:
+            project_id: Project ID
+            label: Filter by label
+            status: Filter by status
+
+        Returns:
+            Number of documents matching the criteria
+
+        Raises:
+            HTTPException: If there's a database error
+        """
+        try:
+            # Build query
+            query = select(func.count(DocumentModel.id)).where(
+                DocumentModel.project_id == project_id
+            )
+
+            # Apply filters
+            if label is not None:
+                query = query.where(DocumentModel.label == label)
+            if status is not None:
+                query = query.where(DocumentModel.status == status)
+
+            # Execute query
+            result = await self.db.execute(query)
+            count = result.scalar()
+
+            return count or 0
+        except SQLAlchemyError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Database error while counting documents: {str(e)}"
             ) from e
 
     def _convert_to_pydantic(self, doc: DocumentModel) -> Document:
