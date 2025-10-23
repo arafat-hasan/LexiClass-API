@@ -12,16 +12,18 @@ class DocumentStorage:
 
     def __init__(self) -> None:
         """Initialize document storage."""
-        self.base_path = settings.STORAGE_PATH / settings.DOCUMENTS_DIR
-        self._ensure_storage_path()
-
-    def _ensure_storage_path(self) -> None:
-        """Ensure the storage directory exists."""
-        os.makedirs(self.base_path, exist_ok=True)
+        pass
 
     def _get_project_path(self, project_id: str) -> Path:
-        """Get project directory path."""
-        project_path = self.base_path / project_id
+        """Get project documents directory path.
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            Path to project documents directory
+        """
+        project_path = settings.get_documents_path(project_id)
         os.makedirs(project_path, exist_ok=True)
         return project_path
 

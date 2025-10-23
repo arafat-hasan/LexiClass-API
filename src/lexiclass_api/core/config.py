@@ -1,10 +1,9 @@
 """Configuration settings for the API service."""
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from pydantic import (
-    AnyHttpUrl,
     PostgresDsn,
     RedisDsn,
     field_validator,
@@ -107,9 +106,50 @@ class Settings(BaseSettings):
 
     # Storage
     STORAGE_PATH: Path = Path("/data")
-    MODELS_DIR: str = "models"
-    INDEXES_DIR: str = "indexes"
-    DOCUMENTS_DIR: str = "documents"
+
+    def get_project_storage_path(self, project_id: str) -> Path:
+        """Get the base storage path for a project.
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            Path to project storage directory
+        """
+        return self.STORAGE_PATH / project_id
+
+    def get_models_path(self, project_id: str) -> Path:
+        """Get the models path for a project.
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            Path to project models directory
+        """
+        return self.get_project_storage_path(project_id) / "models"
+
+    def get_indexes_path(self, project_id: str) -> Path:
+        """Get the indexes path for a project.
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            Path to project indexes directory
+        """
+        return self.get_project_storage_path(project_id) / "indexes"
+
+    def get_documents_path(self, project_id: str) -> Path:
+        """Get the documents path for a project.
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            Path to project documents directory
+        """
+        return self.get_project_storage_path(project_id) / "documents"
 
     # Logging
     LOG_LEVEL: str = "INFO"

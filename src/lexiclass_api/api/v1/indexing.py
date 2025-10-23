@@ -56,7 +56,7 @@ async def trigger_indexing(
     await db.commit()
 
     # Construct storage path
-    documents_path = str(settings.STORAGE_PATH.resolve() / settings.DOCUMENTS_DIR / project_id)
+    documents_path = str(settings.get_documents_path(project_id).resolve())
 
     # Submit task to worker
     task = worker.index_documents(
