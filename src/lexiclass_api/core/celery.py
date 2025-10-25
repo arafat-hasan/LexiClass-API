@@ -33,8 +33,8 @@ app = Celery("lexiclass_api")
 # Configure Celery
 app.conf.update(
     # Broker and result backend
-    broker_url=settings.CELERY_BROKER_URL,
-    result_backend=settings.CELERY_RESULT_BACKEND,
+    broker_url=str(settings.CELERY_BROKER_URL),
+    result_backend=str(settings.CELERY_RESULT_BACKEND),
     
     # Serialization
     task_serializer=settings.CELERY_TASK_SERIALIZER,

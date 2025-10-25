@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
+from ..models import IndexStatus
+
 
 class DocumentBase(BaseModel):
     """Shared properties."""
@@ -53,7 +55,7 @@ class DocumentInDBBase(BaseModel):
     content_path: str
     metadata: Dict = Field(default_factory=dict)
     label: Optional[str] = Field(None, max_length=255)
-    status: str
+    index_status: IndexStatus
     prediction: Optional[str] = None
     confidence: Optional[float] = None
     prediction_id: Optional[str] = None

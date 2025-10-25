@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
-from ..models.document import Document as DocumentModel
+from ..models.document import Document as DocumentModel, IndexStatus
 from ..schemas.document import DocumentBulkCreate, Document
 
 
@@ -96,7 +96,7 @@ class DocumentService:
                     _content=doc.content,  # This will trigger content storage
                     doc_metadata=doc.metadata,  # Note: using doc_metadata to match model field name
                     label=doc.label,
-                    status="pending",
+                    index_status=IndexStatus.PENDING,
                 )
                 for doc in documents_in.documents
             ]
@@ -124,7 +124,7 @@ class DocumentService:
         skip: int = 0,
         limit: int = DEFAULT_PAGE_SIZE,
         label: Optional[str] = None,
-        status: Optional[str] = None,
+        index_status: Optional[IndexStatus] = None,
     ) -> Sequence[Document]:
         """Get multiple documents.
 
@@ -133,7 +133,7 @@ class DocumentService:
             skip: Number of documents to skip (must be >= 0)
             limit: Maximum number of documents to return (1-1000)
             label: Filter by label
-            status: Filter by status
+            index_status: Filter by index status
 
         Returns:
             List of documents
@@ -167,8 +167,8 @@ class DocumentService:
             # Apply filters
             if label is not None:
                 query = query.where(DocumentModel.label == label)
-            if status is not None:
-                query = query.where(DocumentModel.status == status)
+            if index_status is not None:
+                query = query.where(DocumentModel.index_status == index_status)
 
             # Apply pagination
             query = query.offset(skip).limit(limit)
@@ -189,14 +189,14 @@ class DocumentService:
         project_id: str,
         *,
         label: Optional[str] = None,
-        status: Optional[str] = None,
+        index_status: Optional[IndexStatus] = None,
     ) -> int:
         """Count documents matching the given criteria.
 
         Args:
             project_id: Project ID
             label: Filter by label
-            status: Filter by status
+            index_status: Filter by index status
 
         Returns:
             Number of documents matching the criteria
@@ -213,8 +213,8 @@ class DocumentService:
             # Apply filters
             if label is not None:
                 query = query.where(DocumentModel.label == label)
-            if status is not None:
-                query = query.where(DocumentModel.status == status)
+            if index_status is not None:
+                query = query.where(DocumentModel.index_status == index_status)
 
             # Execute query
             result = await self.db.execute(query)
@@ -226,6 +226,23 @@ class DocumentService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error while counting documents: {str(e)}"
             ) from e
+
+    async def get_by_id(self, document_id: str) -> Optional[Document]:
+        """Get document by ID.
+
+        Args:
+            document_id: Document ID
+
+        Returns:
+            Document if found, None otherwise
+        """
+        query = select(DocumentModel).where(DocumentModel.id == document_id)
+        result = await self.db.execute(query)
+        doc = result.scalar_one_or_none()
+
+        if doc:
+            return self._convert_to_pydantic(doc)
+        return None
 
     def _convert_to_pydantic(self, doc: DocumentModel) -> Document:
         """Convert SQLAlchemy model to Pydantic model.

@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
-from ...core.worker import worker
+from ...core.worker import worker, TaskResult
 from ...core.config import settings
+from ...models import IndexStatus
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
 
@@ -48,11 +49,11 @@ async def trigger_indexing(
             detail="Project not found",
         )
 
-    # Update all documents status to pending
+    # Update all documents index_status to pending
     doc_service = DocumentService(db)
     docs = await doc_service.get_multi(project_id)
     for doc in docs:
-        doc.status = "pending"
+        doc.index_status = IndexStatus.PENDING
     await db.commit()
 
     # Construct storage path
@@ -107,9 +108,9 @@ async def get_index_status(
     # Get document statistics
     doc_service = DocumentService(db)
     total = await doc_service.count(project_id)
-    indexed = await doc_service.count(project_id, status="indexed")
-    pending = await doc_service.count(project_id, status="pending")
-    failed = await doc_service.count(project_id, status="failed")
+    indexed = await doc_service.count(project_id, index_status=IndexStatus.INDEXED)
+    pending = await doc_service.count(project_id, index_status=IndexStatus.PENDING)
+    failed = await doc_service.count(project_id, index_status=IndexStatus.FAILED)
 
     return {
         "status": "valid" if indexed > 0 else "missing",
@@ -122,12 +123,13 @@ async def get_index_status(
 
 @router.get(
     "/tasks/{task_id}",
+    response_model=TaskResult,
     tags=["indexing"],
 )
 async def get_task_status(
     task_id: str,
 
-) -> dict:
+) -> TaskResult:
     """Get status of a specific task.
 
     Args:

@@ -1,14 +1,25 @@
 """Document model definition."""
 
+import enum
 from typing import TYPE_CHECKING, Optional, ClassVar
 
-from sqlalchemy import JSON, ForeignKey, String, event
+from sqlalchemy import JSON, Enum, ForeignKey, String, event
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from ..core.storage import document_storage
 
+
+class IndexStatus(str, enum.Enum):
+    """Document indexing status."""
+
+    PENDING = "pending"
+    INDEXED = "indexed"
+    FAILED = "failed"
+
 if TYPE_CHECKING:
+    from .document_label import DocumentLabel
+    from .prediction import Prediction
     from .project import Project
 
 
@@ -43,30 +54,23 @@ class Document(Base):
         default=dict,
         nullable=False,
     )
-    label: Mapped[Optional[str]] = mapped_column(
-        String(length=255),
-        nullable=True,
-    )
-    prediction: Mapped[Optional[str]] = mapped_column(
-        String(length=255),
-        nullable=True,
-    )
-    confidence: Mapped[Optional[float]] = mapped_column(
-        nullable=True,
-    )
-    prediction_id: Mapped[Optional[str]] = mapped_column(
-        String(length=255),
-        nullable=True,
-        index=True,
-    )
-    status: Mapped[str] = mapped_column(
-        String(length=50),
-        default="pending",
+    index_status: Mapped[IndexStatus] = mapped_column(
+        Enum(IndexStatus, native_enum=False, length=50),
+        default=IndexStatus.PENDING,
         nullable=False,
+        index=True,
     )
 
     # Relationships
     project: Mapped["Project"] = relationship(back_populates="documents")
+    labels: Mapped[list["DocumentLabel"]] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan",
+    )
+    predictions: Mapped[list["Prediction"]] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan",
+    )
 
 
 # SQLAlchemy event listeners

@@ -10,6 +10,7 @@ from .base import Base
 
 if TYPE_CHECKING:
     from .document import Document
+    from .field import Field
     from .task import Task
 
 
@@ -47,6 +48,10 @@ class Project(Base):
 
     # Relationships
     documents: Mapped[List["Document"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    fields: Mapped[List["Field"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
     )

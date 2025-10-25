@@ -5,8 +5,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lexiclass_api.db.session import get_db
-
+from ...core.deps import get_db
+from ...models import IndexStatus
 from ...schemas.document import Document, DocumentBulkCreate
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
@@ -67,7 +67,7 @@ async def list_documents(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     label: str | None = None,
-    status: str | None = None,
+    index_status: IndexStatus | None = None,
 ) -> List[Document]:
     """List documents in a project.
 
@@ -78,7 +78,7 @@ async def list_documents(
         skip: Number of documents to skip
         limit: Maximum number of documents to return
         label: Filter by label
-        status: Filter by status
+        index_status: Filter by index status
 
     Returns:
         List of documents
@@ -102,7 +102,7 @@ async def list_documents(
         skip=skip,
         limit=limit,
         label=label,
-        status=status,
+        index_status=index_status,
     )
     return list(documents)
 

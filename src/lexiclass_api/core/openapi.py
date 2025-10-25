@@ -55,6 +55,18 @@ tags_metadata = [
         "description": "Document management within projects",
     },
     {
+        "name": "fields",
+        "description": "Field management - classification dimensions for projects",
+    },
+    {
+        "name": "field-classes",
+        "description": "Field class management - possible values for each field",
+    },
+    {
+        "name": "document-labels",
+        "description": "Document labeling - assign manual labels for training",
+    },
+    {
         "name": "indexing",
         "description": "Document indexing operations",
     },

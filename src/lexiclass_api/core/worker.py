@@ -125,7 +125,7 @@ class BaseTaskHandler(ABC):
         return self.app.send_task(
             self.task_name,
             kwargs=input_data.model_dump(),
-            queue=queue_config.name,
+            queue=queue_config.name.value,  # Use .value to get string from enum
             routing_key=queue_config.routing_key,
             priority=queue_config.priority,
             retry=True,
@@ -191,6 +191,57 @@ class PredictionTaskHandler(BaseTaskHandler):
         return QueueName.PREDICTION
 
 
+class FieldTrainingInput(TaskInput):
+    """Input schema for field model training task."""
+
+    field_id: str = Field(..., description="Field ID to train")
+
+
+class FieldTrainingTaskHandler(BaseTaskHandler):
+    """Handler for field model training tasks."""
+
+    @property
+    def task_name(self) -> str:
+        """Get task name."""
+        return "lexiclass_worker.tasks.field_train.train_field_model_task"
+
+    @property
+    def input_schema(self) -> type[TaskInput]:
+        """Get input schema."""
+        return FieldTrainingInput
+
+    @property
+    def queue_name(self) -> QueueName:
+        """Get queue name."""
+        return QueueName.TRAINING
+
+
+class FieldPredictionInput(TaskInput):
+    """Input schema for field prediction task."""
+
+    field_id: str = Field(..., description="Field ID to use for prediction")
+    document_ids: List[str] = Field(..., description="Document IDs to predict")
+
+
+class FieldPredictionTaskHandler(BaseTaskHandler):
+    """Handler for field prediction tasks."""
+
+    @property
+    def task_name(self) -> str:
+        """Get task name."""
+        return "lexiclass_worker.tasks.field_predict.predict_field_documents_task"
+
+    @property
+    def input_schema(self) -> type[TaskInput]:
+        """Get input schema."""
+        return FieldPredictionInput
+
+    @property
+    def queue_name(self) -> QueueName:
+        """Get queue name."""
+        return QueueName.PREDICTION
+
+
 class WorkerClient:
     """Client for interacting with LexiClass-Worker service."""
 
@@ -217,6 +268,8 @@ class WorkerClient:
         self._indexing = IndexingTaskHandler(self.app)
         self._training = TrainingTaskHandler(self.app)
         self._prediction = PredictionTaskHandler(self.app)
+        self._field_training = FieldTrainingTaskHandler(self.app)
+        self._field_prediction = FieldPredictionTaskHandler(self.app)
 
     def index_documents(
         self,
@@ -289,6 +342,49 @@ class WorkerClient:
             model_id=model_id,
         )
         return self._prediction.submit(input_data)
+
+    def train_field_model(
+        self,
+        field_id: str,
+        project_id: str,
+    ) -> AsyncResult:
+        """Submit field model training task to worker.
+
+        Args:
+            field_id: Field ID to train
+            project_id: Project ID
+
+        Returns:
+            Celery AsyncResult for tracking task status
+        """
+        input_data = FieldTrainingInput(
+            field_id=field_id,
+            project_id=project_id,
+        )
+        return self._field_training.submit(input_data)
+
+    def predict_field_documents(
+        self,
+        field_id: str,
+        project_id: str,
+        document_ids: List[str],
+    ) -> AsyncResult:
+        """Submit field prediction task to worker.
+
+        Args:
+            field_id: Field ID to use for prediction
+            project_id: Project ID
+            document_ids: List of document IDs to predict
+
+        Returns:
+            Celery AsyncResult for tracking task status
+        """
+        input_data = FieldPredictionInput(
+            field_id=field_id,
+            project_id=project_id,
+            document_ids=document_ids,
+        )
+        return self._field_prediction.submit(input_data)
 
     def get_task_status(self, task_id: str) -> TaskResult:
         """Get task status from worker.
