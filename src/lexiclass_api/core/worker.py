@@ -10,7 +10,8 @@ from celery.result import AsyncResult
 from pydantic import BaseModel, Field
 
 from .config import settings
-from lexiclass_worker.core.queue_config import QUEUE_CONFIGS, TASK_QUEUES, TASK_ROUTES, QueueName
+from lexiclass_core.queue_config import QUEUE_CONFIGS, TASK_QUEUES, TASK_ROUTES
+from lexiclass_core.constants import QueueName
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@
 from typing import Dict, Any
 
 from celery import Celery
-from lexiclass_worker.core.queue_config import (
+from lexiclass_core.queue_config import (
     QUEUE_CONFIGS,
     TASK_QUEUES,
     TASK_ROUTES,

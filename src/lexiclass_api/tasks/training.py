@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 from celery import Task
 
-from lexiclass_worker.core.queue_config import QueueName
+from lexiclass_core.constants import QueueName
 
 from ..db.session import async_session
 from ..models import IndexStatus, ModelStatus

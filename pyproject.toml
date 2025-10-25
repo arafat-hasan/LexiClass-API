@@ -11,6 +11,7 @@ python = ">=3.9"
 fastapi = ">=0.109.0"
 uvicorn = {extras = ["standard"], version = ">=0.27.0"}
 gunicorn = ">=21.2.0"
+greenlet = ">=3.0.0"
 pydantic = ">=2.0.0"
 pydantic-settings = ">=2.1.0"
 sqlalchemy = ">=2.0.0"
@@ -24,7 +25,7 @@ python-multipart = ">=0.0.9"
 prometheus-client = ">=0.19.0"
 structlog = ">=24.1.0"
 python-json-logger = ">=2.0.0"
-lexiclass-worker = {git = "https://github.com/arafat-hasan/lexiclass-worker.git"}
+lexiclass-core = {path = "../LexiClass-Core", develop = true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0.0"

@@ -8,9 +8,12 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from lexiclass_api.core.config import settings
-from lexiclass_api.models.base import Base
-from lexiclass_api.models.project import Project  # noqa
-from lexiclass_api.models.document import Document  # noqa
+from lexiclass_core.models.base import Base
+from lexiclass_core.models.project import Project  # noqa
+from lexiclass_core.models.document import Document  # noqa
+from lexiclass_core.models.field import Field  # noqa
+from lexiclass_core.models.prediction import Prediction  # noqa
+from lexiclass_core.models.model import Model  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

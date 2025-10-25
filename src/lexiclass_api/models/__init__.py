@@ -1,13 +1,21 @@
-"""Models package."""
+"""Models package - re-exports models from lexiclass_core.
 
-from .base import Base
-from .document import Document, IndexStatus
-from .document_label import DocumentLabel
-from .field import Field
-from .field_class import FieldClass
-from .model import Model, ModelStatus
-from .prediction import Prediction
-from .project import Project
+All database models are now defined in lexiclass_core and re-exported here
+for backward compatibility with existing API code.
+"""
+
+from lexiclass_core.models import (
+    Base,
+    Document,
+    DocumentLabel,
+    Field,
+    FieldClass,
+    IndexStatus,
+    Model,
+    ModelStatus,
+    Prediction,
+    Project,
+)
 from .task import Task
 
 __all__ = [
