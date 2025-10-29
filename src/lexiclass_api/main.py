@@ -9,6 +9,19 @@ from prometheus_client import make_asgi_app
 
 from .api.v1.router import api_router
 from .core.config import settings
+from .core import storage  # Configure document storage at startup
+
+# Disable synchronous event listeners from Core that don't work with async sessions
+# The Core Document model has 'after_insert' and 'before_delete' listeners that are synchronous
+# We need to handle document storage manually in the API service layer instead
+from sqlalchemy import event
+from lexiclass_core.models.document import Document as CoreDocument, store_document_after_insert, delete_document_before_delete
+
+try:
+    event.remove(CoreDocument, "after_insert", store_document_after_insert)
+    event.remove(CoreDocument, "before_delete", delete_document_before_delete)
+except Exception:
+    pass  # Listeners might not be registered yet
 
 
 

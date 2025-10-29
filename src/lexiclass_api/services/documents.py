@@ -87,29 +87,33 @@ class DocumentService:
             existing_ids = [doc.id for doc in documents_in.documents if doc.id is not None]
             await self._check_existing_ids(existing_ids)
 
-            # Create document models
-            db_documents = [
-                DocumentModel(
+            # Store content files FIRST and get paths
+            from ..core.storage import document_storage
+
+            # Create document models with content already stored
+            db_documents = []
+            for doc in documents_in.documents:
+                doc_id = doc.id or str(uuid.uuid4())
+
+                # Store content and get path BEFORE creating model
+                path = document_storage.store_document(project_id, doc_id, doc.content)
+
+                db_doc = DocumentModel(
                     project_id=project_id,
-                    id=doc.id or str(uuid.uuid4()),  # Use provided ID or generate UUID
-                    content_path="",  # Will be set by the model after insert
-                    _content=doc.content,  # This will trigger content storage
-                    doc_metadata=doc.metadata,  # Note: using doc_metadata to match model field name
-                    label=doc.label,
+                    id=doc_id,
+                    content_path=str(path),
+                    doc_metadata=doc.metadata,
                     index_status=IndexStatus.PENDING,
                 )
-                for doc in documents_in.documents
-            ]
+                db_documents.append(db_doc)
 
-            # Add to DB
+            # Add to DB and commit (content already stored, so no async issues)
             self.db.add_all(db_documents)
             await self.db.commit()
 
-            # Refresh to get generated values
-            for doc in db_documents:
-                await self.db.refresh(doc)
-
-            return [self._convert_to_pydantic(doc) for doc in db_documents]
+            # Don't refresh - we already have all the data we need
+            # Convert to Pydantic without accessing lazy-loaded relationships
+            return [self._convert_to_pydantic_simple(doc) for doc in db_documents]
         except SQLAlchemyError as e:
             await self.db.rollback()
             raise HTTPException(
@@ -177,7 +181,7 @@ class DocumentService:
             result = await self.db.execute(query)
             documents = result.scalars().all()
 
-            return [self._convert_to_pydantic(doc) for doc in documents]
+            return [self._convert_to_pydantic_simple(doc) for doc in documents]
         except SQLAlchemyError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -241,8 +245,31 @@ class DocumentService:
         doc = result.scalar_one_or_none()
 
         if doc:
-            return self._convert_to_pydantic(doc)
+            return self._convert_to_pydantic_simple(doc)
         return None
+
+    def _convert_to_pydantic_simple(self, doc: DocumentModel) -> Document:
+        """Convert SQLAlchemy model to Pydantic model without accessing relationships.
+
+        Args:
+            doc: SQLAlchemy document model
+
+        Returns:
+            Pydantic document model
+        """
+        return Document.model_validate({
+            'id': doc.id,
+            'project_id': doc.project_id,
+            'content_path': doc.content_path,
+            'metadata': doc.doc_metadata,
+            'label': None,  # No relationships loaded yet
+            'index_status': doc.index_status,
+            'prediction': None,
+            'confidence': None,
+            'prediction_id': None,
+            'created_at': doc.created_at,
+            'updated_at': doc.updated_at,
+        })
 
     def _convert_to_pydantic(self, doc: DocumentModel) -> Document:
         """Convert SQLAlchemy model to Pydantic model.
@@ -253,9 +280,27 @@ class DocumentService:
         Returns:
             Pydantic document model
         """
+        # Get the latest prediction if available
+        latest_prediction = doc.predictions[0] if doc.predictions else None
+
+        # Get the first label if available (for backward compatibility)
+        # Note: Documents can have multiple labels (one per field), this returns the first one
+        first_label = None
+        if doc.labels:
+            first_label = doc.labels[0].field_class.name if doc.labels[0].field_class else None
+
         return Document.model_validate({
-            **{k: v for k, v in doc.__dict__.items() if not k.startswith('_')},
-            'metadata': doc.doc_metadata  # Map doc_metadata to metadata for Pydantic
+            'id': doc.id,
+            'project_id': doc.project_id,
+            'content_path': doc.content_path,
+            'metadata': doc.doc_metadata,  # Map doc_metadata to metadata for Pydantic
+            'label': first_label,
+            'index_status': doc.index_status,
+            'prediction': latest_prediction.field_class.name if latest_prediction and latest_prediction.field_class else None,
+            'confidence': latest_prediction.confidence if latest_prediction else None,
+            'prediction_id': latest_prediction.id if latest_prediction else None,
+            'created_at': doc.created_at,
+            'updated_at': doc.updated_at,
         })
 
     async def get_multi_by_ids(self, project_id: str, document_ids: List[str]) -> Sequence[Document]:
@@ -276,7 +321,7 @@ class DocumentService:
         result = await self.db.execute(query)
         documents = result.scalars().all()
 
-        return [self._convert_to_pydantic(doc) for doc in documents]
+        return [self._convert_to_pydantic_simple(doc) for doc in documents]
 
     async def delete_multi(self, project_id: str, document_ids: List[str]) -> None:
         """Delete multiple documents.
