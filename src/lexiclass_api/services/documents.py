@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
-from ..models.document import Document as DocumentModel, IndexStatus
+from ..models import Document as DocumentModel, IndexStatus
 from ..schemas.document import DocumentBulkCreate, Document
 
 

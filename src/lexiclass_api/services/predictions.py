@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.prediction import Prediction
+from ..models import Prediction
 from ..schemas.prediction import PredictionCreate, PredictionUpdate
 
 logger = logging.getLogger(__name__)

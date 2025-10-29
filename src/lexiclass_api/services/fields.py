@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.field import Field
+from ..models import Field
 from ..schemas.field import FieldCreate, FieldUpdate
 
 logger = logging.getLogger(__name__)

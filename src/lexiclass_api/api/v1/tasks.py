@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
+from ...core.worker import worker
 from ...services.projects import ProjectService
-from ...worker import celery_app
 
 router = APIRouter()
 
@@ -33,8 +33,8 @@ async def get_task_status(
     Raises:
         HTTPException: If task not found
     """
-    # Get task result
-    task = AsyncResult(task_id, app=celery_app)
+    # Get task result from worker
+    task = AsyncResult(task_id, app=worker.app)
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -82,21 +82,21 @@ async def list_project_tasks(
             detail="Project not found",
         )
 
-    # Get active tasks from Celery
+    # Get active tasks from Worker Celery
     # Note: This is a simplified implementation
     # In a production system, you would typically:
     # 1. Store task IDs in the database with project association
     # 2. Query the database for task IDs
     # 3. Look up task status from Celery
-    i = celery_app.control.inspect()
+    i = worker.app.control.inspect()
     active_tasks = []
-    
+
     # Get active tasks
     if i.active():
         for tasks in i.active().values():
             for task in tasks:
                 if task.get("kwargs", {}).get("project_id") == project_id:
-                    task_result = AsyncResult(task["id"], app=celery_app)
+                    task_result = AsyncResult(task["id"], app=worker.app)
                     active_tasks.append({
                         "task_id": task["id"],
                         "name": task["name"],
@@ -125,8 +125,8 @@ async def cancel_task(
     Raises:
         HTTPException: If task not found or cannot be canceled
     """
-    # Get task
-    task = AsyncResult(task_id, app=celery_app)
+    # Get task from worker
+    task = AsyncResult(task_id, app=worker.app)
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

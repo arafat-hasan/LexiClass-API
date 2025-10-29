@@ -2,7 +2,6 @@
 
 import logging
 from abc import ABC, abstractmethod
-from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol
 
 from celery import Celery
@@ -11,57 +10,15 @@ from pydantic import BaseModel, Field
 
 from .config import settings
 from lexiclass_core.queue_config import QUEUE_CONFIGS, TASK_QUEUES, TASK_ROUTES
-from lexiclass_core.constants import QueueName
+from lexiclass_core.constants import QueueName, TaskStatus
+from lexiclass_core.schemas import (
+    IndexDocumentsInput,
+    TrainFieldModelInput,
+    PredictFieldDocumentsInput,
+    TaskResult,
+)
 
 logger = logging.getLogger(__name__)
-
-
-class TaskStatus(str, Enum):
-    """Task status enum."""
-
-    PENDING = "PENDING"
-    STARTED = "STARTED"
-    SUCCESS = "SUCCESS"
-    FAILURE = "FAILURE"
-    RETRY = "RETRY"
-    REVOKED = "REVOKED"
-
-
-class TaskResult(BaseModel):
-    """Base task result schema."""
-
-    task_id: str
-    status: TaskStatus
-    error: Optional[str] = None
-    result: Optional[Dict[str, Any]] = None
-
-
-class TaskInput(BaseModel):
-    """Base task input schema."""
-
-    project_id: str = Field(..., description="Project ID")
-
-
-class IndexingInput(TaskInput):
-    """Input schema for document indexing task."""
-
-    documents_path: str = Field(..., description="Path to project's document storage directory")
-    is_incremental: bool = Field(True, description="Whether to perform incremental indexing")
-
-
-class TrainingInput(TaskInput):
-    """Input schema for model training task."""
-
-    labels_path: str = Field(..., description="Path to labels file")
-    document_ids: Optional[List[str]] = Field(None, description="Optional list of document IDs to train on")
-    model_params: Optional[Dict[str, Any]] = Field(None, description="Optional model parameters")
-
-
-class PredictionInput(TaskInput):
-    """Input schema for prediction task."""
-
-    document_ids: List[str] = Field(..., description="List of document IDs to predict")
-    model_id: Optional[str] = Field(None, description="Optional model ID to use for prediction")
 
 
 class TaskHandler(Protocol):
@@ -72,7 +29,7 @@ class TaskHandler(Protocol):
         """Get task name."""
         ...
 
-    def submit(self, input_data: TaskInput) -> AsyncResult:
+    def submit(self, input_data: BaseModel) -> AsyncResult:
         """Submit task to worker."""
         ...
 
@@ -96,7 +53,7 @@ class BaseTaskHandler(ABC):
 
     @property
     @abstractmethod
-    def input_schema(self) -> type[TaskInput]:
+    def input_schema(self) -> type[BaseModel]:
         """Get input schema."""
         ...
 
@@ -106,7 +63,7 @@ class BaseTaskHandler(ABC):
         """Get queue name."""
         ...
 
-    def submit(self, input_data: TaskInput) -> AsyncResult:
+    def submit(self, input_data: BaseModel) -> AsyncResult:
         """Submit task to worker.
 
         Args:
@@ -144,58 +101,14 @@ class IndexingTaskHandler(BaseTaskHandler):
         return "lexiclass_worker.tasks.index.index_documents_task"
 
     @property
-    def input_schema(self) -> type[TaskInput]:
+    def input_schema(self) -> type[BaseModel]:
         """Get input schema."""
-        return IndexingInput
+        return IndexDocumentsInput
 
     @property
     def queue_name(self) -> QueueName:
         """Get queue name."""
         return QueueName.INDEXING
-
-
-class TrainingTaskHandler(BaseTaskHandler):
-    """Handler for model training tasks."""
-
-    @property
-    def task_name(self) -> str:
-        """Get task name."""
-        return "lexiclass_worker.tasks.train_model_task"
-
-    @property
-    def input_schema(self) -> type[TaskInput]:
-        """Get input schema."""
-        return TrainingInput
-
-    @property
-    def queue_name(self) -> QueueName:
-        """Get queue name."""
-        return QueueName.TRAINING
-
-
-class PredictionTaskHandler(BaseTaskHandler):
-    """Handler for prediction tasks."""
-
-    @property
-    def task_name(self) -> str:
-        """Get task name."""
-        return "lexiclass_worker.tasks.predict_documents_task"
-
-    @property
-    def input_schema(self) -> type[TaskInput]:
-        """Get input schema."""
-        return PredictionInput
-
-    @property
-    def queue_name(self) -> QueueName:
-        """Get queue name."""
-        return QueueName.PREDICTION
-
-
-class FieldTrainingInput(TaskInput):
-    """Input schema for field model training task."""
-
-    field_id: str = Field(..., description="Field ID to train")
 
 
 class FieldTrainingTaskHandler(BaseTaskHandler):
@@ -207,21 +120,14 @@ class FieldTrainingTaskHandler(BaseTaskHandler):
         return "lexiclass_worker.tasks.field_train.train_field_model_task"
 
     @property
-    def input_schema(self) -> type[TaskInput]:
+    def input_schema(self) -> type[BaseModel]:
         """Get input schema."""
-        return FieldTrainingInput
+        return TrainFieldModelInput
 
     @property
     def queue_name(self) -> QueueName:
         """Get queue name."""
         return QueueName.TRAINING
-
-
-class FieldPredictionInput(TaskInput):
-    """Input schema for field prediction task."""
-
-    field_id: str = Field(..., description="Field ID to use for prediction")
-    document_ids: List[str] = Field(..., description="Document IDs to predict")
 
 
 class FieldPredictionTaskHandler(BaseTaskHandler):
@@ -233,9 +139,9 @@ class FieldPredictionTaskHandler(BaseTaskHandler):
         return "lexiclass_worker.tasks.field_predict.predict_field_documents_task"
 
     @property
-    def input_schema(self) -> type[TaskInput]:
+    def input_schema(self) -> type[BaseModel]:
         """Get input schema."""
-        return FieldPredictionInput
+        return PredictFieldDocumentsInput
 
     @property
     def queue_name(self) -> QueueName:
@@ -267,8 +173,6 @@ class WorkerClient:
 
         # Initialize task handlers
         self._indexing = IndexingTaskHandler(self.app)
-        self._training = TrainingTaskHandler(self.app)
-        self._prediction = PredictionTaskHandler(self.app)
         self._field_training = FieldTrainingTaskHandler(self.app)
         self._field_prediction = FieldPredictionTaskHandler(self.app)
 
@@ -282,67 +186,18 @@ class WorkerClient:
 
         Args:
             project_id: Project ID
-            storage_path: Path to project's document storage directory
+            documents_path: Path to project's document storage directory
             is_incremental: Whether to perform incremental indexing
 
         Returns:
             Celery AsyncResult for tracking task status
         """
-        input_data = IndexingInput(
+        input_data = IndexDocumentsInput(
             project_id=project_id,
             documents_path=documents_path,
             is_incremental=is_incremental,
         )
         return self._indexing.submit(input_data)
-
-    def train_model(
-        self,
-        project_id: str,
-        labels_path: str,
-        document_ids: Optional[List[str]] = None,
-        model_params: Optional[Dict[str, Any]] = None,
-    ) -> AsyncResult:
-        """Submit model training task to worker.
-
-        Args:
-            project_id: Project ID
-            labels_path: Path to labels file
-            document_ids: Optional list of document IDs to train on
-            model_params: Optional model parameters
-
-        Returns:
-            Celery AsyncResult for tracking task status
-        """
-        input_data = TrainingInput(
-            project_id=project_id,
-            labels_path=labels_path,
-            document_ids=document_ids,
-            model_params=model_params,
-        )
-        return self._training.submit(input_data)
-
-    def predict_documents(
-        self,
-        project_id: str,
-        document_ids: List[str],
-        model_id: Optional[str] = None,
-    ) -> AsyncResult:
-        """Submit prediction task to worker.
-
-        Args:
-            project_id: Project ID
-            document_ids: List of document IDs to predict
-            model_id: Optional model ID to use for prediction
-
-        Returns:
-            Celery AsyncResult for tracking task status
-        """
-        input_data = PredictionInput(
-            project_id=project_id,
-            document_ids=document_ids,
-            model_id=model_id,
-        )
-        return self._prediction.submit(input_data)
 
     def train_field_model(
         self,
@@ -358,7 +213,7 @@ class WorkerClient:
         Returns:
             Celery AsyncResult for tracking task status
         """
-        input_data = FieldTrainingInput(
+        input_data = TrainFieldModelInput(
             field_id=field_id,
             project_id=project_id,
         )
@@ -380,7 +235,7 @@ class WorkerClient:
         Returns:
             Celery AsyncResult for tracking task status
         """
-        input_data = FieldPredictionInput(
+        input_data = PredictFieldDocumentsInput(
             field_id=field_id,
             project_id=project_id,
             document_ids=document_ids,

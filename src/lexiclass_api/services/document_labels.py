@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.document_label import DocumentLabel
+from ..models import DocumentLabel
 from ..schemas.document_label import DocumentLabelCreate, DocumentLabelUpdate
 
 logger = logging.getLogger(__name__)

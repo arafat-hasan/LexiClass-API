@@ -1,4 +1,11 @@
-"""Celery application configuration for LexiClass API."""
+"""Celery application configuration for LexiClass API.
+
+DEPRECATED: This module is no longer used.
+Task implementations have been moved to LexiClass-Worker.
+The API now uses core.worker.WorkerClient for submitting tasks to the worker service.
+
+This file is kept for reference only and can be safely deleted.
+"""
 
 from typing import Dict, Any
 
@@ -13,7 +20,10 @@ from lexiclass_api.core.config import settings
 
 
 def get_task_annotations() -> Dict[str, Dict[str, Any]]:
-    """Get task-specific annotations from queue configs."""
+    """Get task-specific annotations from queue configs.
+
+    DEPRECATED: No longer used. See core.worker.WorkerClient instead.
+    """
     return {
         f"lexiclass_api.tasks.{queue.name}_task": {
             "rate_limit": queue.rate_limit,
@@ -27,7 +37,8 @@ def get_task_annotations() -> Dict[str, Dict[str, Any]]:
     }
 
 
-# Create Celery app
+# DEPRECATED: Create Celery app
+# Use core.worker.WorkerClient instead
 app = Celery("lexiclass_api")
 
 # Configure Celery
@@ -35,12 +46,12 @@ app.conf.update(
     # Broker and result backend
     broker_url=str(settings.CELERY_BROKER_URL),
     result_backend=str(settings.CELERY_RESULT_BACKEND),
-    
+
     # Serialization
     task_serializer=settings.CELERY_TASK_SERIALIZER,
     result_serializer=settings.CELERY_RESULT_SERIALIZER,
     accept_content=settings.CELERY_ACCEPT_CONTENT,
-    
+
     # General settings
     enable_utc=settings.CELERY_ENABLE_UTC,
     task_track_started=settings.CELERY_TASK_TRACK_STARTED,
@@ -54,11 +65,11 @@ app.conf.update(
     worker_prefetch_multiplier=settings.CELERY_WORKER_PREFETCH_MULTIPLIER,
     worker_max_tasks_per_child=settings.CELERY_WORKER_MAX_TASKS_PER_CHILD,
     worker_send_task_events=settings.CELERY_WORKER_SEND_TASK_EVENTS,
-    
+
     # Queue configuration
     task_queues=TASK_QUEUES,
     task_routes=TASK_ROUTES,
-    
+
     # Task-specific settings
     task_annotations=get_task_annotations(),
 )

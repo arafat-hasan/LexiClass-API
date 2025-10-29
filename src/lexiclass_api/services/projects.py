@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.project import Project
+from ..models import Project
 from ..schemas.project import ProjectCreate, ProjectUpdate
 
 logger = logging.getLogger(__name__)

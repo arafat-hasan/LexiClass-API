@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from lexiclass_core.models import Base
 
 if TYPE_CHECKING:
-    from .project import Project
+    from lexiclass_core.models import Project
 
 
 class Task(Base):

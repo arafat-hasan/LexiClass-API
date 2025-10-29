@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
+from ...core.worker import worker
 from ...schemas.document import Document
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
-from ...tasks.prediction import predict_documents
 
 router = APIRouter()
 
@@ -63,17 +63,13 @@ async def trigger_prediction(
                 detail="One or more documents not found",
             )
 
-    # Trigger prediction task
-    task = predict_documents.delay(
-        project_id=project_id,
-        document_ids=document_ids,
+    # TODO: This endpoint needs to be updated to use field-based prediction
+    # The new architecture requires predicting individual fields, not projects
+    # Use the field prediction endpoint instead: POST /fields/{field_id}/predict
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Project-level prediction is deprecated. Please use field-based prediction endpoints: POST /fields/{field_id}/predict",
     )
-
-    return {
-        "task_id": task.id,
-        "status": "pending",
-        "message": "Prediction task started",
-    }
 
 
 @router.get(

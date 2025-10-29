@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
+from ...core.worker import worker
 from ...services.projects import ProjectService
-from ...tasks.training import train_model
 
 router = APIRouter()
 
@@ -60,17 +60,13 @@ async def trigger_training(
             detail="Training already in progress",
         )
 
-    # Trigger training task
-    task = train_model.delay(
-        project_id=project_id,
-        params=params.params if params else None,
+    # TODO: This endpoint needs to be updated to use field-based training
+    # The new architecture requires training individual fields, not projects
+    # Use the field training endpoint instead: POST /fields/{field_id}/train
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Project-level training is deprecated. Please use field-based training endpoints: POST /fields/{field_id}/train",
     )
-
-    return {
-        "task_id": task.id,
-        "status": "pending",
-        "message": "Training task started",
-    }
 
 
 @router.get(

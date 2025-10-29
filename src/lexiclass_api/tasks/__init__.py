@@ -1,6 +1,8 @@
-"""Celery tasks for LexiClass API."""
+"""Celery tasks module for LexiClass API.
 
-from .training import train_model, train_field_model
-from .prediction import predict_documents, predict_field
+Note: Task implementations have been moved to LexiClass-Worker.
+This module is kept for backwards compatibility but no longer exports tasks.
+The API should use the WorkerClient from core.worker to submit tasks to the worker service.
+"""
 
-__all__ = ['train_model', 'train_field_model', 'predict_documents', 'predict_field']
+__all__ = []
