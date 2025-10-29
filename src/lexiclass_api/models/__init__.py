@@ -15,8 +15,8 @@ from lexiclass_core.models import (
     ModelStatus,
     Prediction,
     Project,
+    Task,
 )
-from .task import Task
 
 __all__ = [
     "Base",
