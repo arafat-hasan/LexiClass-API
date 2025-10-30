@@ -2,13 +2,12 @@
 
 import logging
 from typing import Optional, Sequence
-from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Model, ModelStatus
-from ..schemas.model import ModelCreate, ModelUpdate
+from ..schemas import ModelCreate, ModelUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +19,11 @@ class ModelService:
         """Initialize service with database session."""
         self.db = db
 
-    async def create(self, field_id: str, obj_in: ModelCreate) -> Model:
+    async def create(self, field_id: int, obj_in: ModelCreate) -> Model:
         """Create new model."""
-        model_id = str(uuid4())
         db_obj = Model(
-            id=model_id,
             field_id=field_id,
             version=obj_in.version,
-            model_path=obj_in.model_path,
-            vectorizer_path=obj_in.vectorizer_path,
             accuracy=obj_in.accuracy,
             metrics=obj_in.metrics,
             status=obj_in.status,
@@ -41,14 +36,14 @@ class ModelService:
         logger.info(
             "Created new model",
             extra={
-                "model_id": model_id,
+                "model_id": db_obj.id,
                 "field_id": field_id,
                 "version": obj_in.version,
             },
         )
         return db_obj
 
-    async def get(self, model_id: str) -> Optional[Model]:
+    async def get(self, model_id: int) -> Optional[Model]:
         """Get model by ID."""
         result = await self.db.execute(
             select(Model).where(Model.id == model_id)
@@ -57,7 +52,7 @@ class ModelService:
 
     async def get_by_field(
         self,
-        field_id: str,
+        field_id: int,
         *,
         skip: int = 0,
         limit: int = 100,
@@ -72,7 +67,7 @@ class ModelService:
         )
         return result.scalars().all()
 
-    async def get_latest_by_field(self, field_id: str) -> Optional[Model]:
+    async def get_latest_by_field(self, field_id: int) -> Optional[Model]:
         """Get latest model by field ID."""
         result = await self.db.execute(
             select(Model)
@@ -82,7 +77,7 @@ class ModelService:
         )
         return result.scalar_one_or_none()
 
-    async def get_latest_ready_by_field(self, field_id: str) -> Optional[Model]:
+    async def get_latest_ready_by_field(self, field_id: int) -> Optional[Model]:
         """Get latest ready model by field ID."""
         result = await self.db.execute(
             select(Model)
@@ -128,7 +123,7 @@ class ModelService:
             extra={"model_id": model_id},
         )
 
-    async def delete_old_models(self, field_id: str, keep_latest: int = 1) -> int:
+    async def delete_old_models(self, field_id: int, keep_latest: int = 1) -> int:
         """Delete old models for a field, keeping only the latest N models.
 
         Args:

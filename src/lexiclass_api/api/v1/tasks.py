@@ -56,7 +56,7 @@ async def get_task_status(
 )
 async def list_project_tasks(
     *,
-    project_id: str,
+    project_id: int,
     db: AsyncSession = Depends(get_db),
 
 ) -> List[dict]:

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
 from ...models import IndexStatus
-from ...schemas.document import Document, DocumentBulkCreate
+from ...schemas import Document, DocumentBulkCreate
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
 
@@ -22,7 +22,7 @@ router = APIRouter()
 )
 async def create_documents(
     *,
-    project_id: str,
+    project_id: int,
     documents_in: DocumentBulkCreate,
     db: AsyncSession = Depends(get_db),
 ) -> List[Document]:
@@ -62,7 +62,7 @@ async def create_documents(
 )
 async def list_documents(
     *,
-    project_id: str,
+    project_id: int,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -114,8 +114,8 @@ async def list_documents(
 )
 async def delete_documents(
     *,
-    project_id: str,
-    document_ids: List[str] = Query(..., min_items=1, max_items=1000),
+    project_id: int,
+    document_ids: List[int] = Query(..., min_items=1, max_items=1000),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete documents from a project.

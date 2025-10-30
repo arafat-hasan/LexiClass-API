@@ -2,13 +2,13 @@
 
 import logging
 from typing import Optional, Sequence
-from uuid import uuid4
+
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Field
-from ..schemas.field import FieldCreate, FieldUpdate
+from ..schemas import FieldCreate, FieldUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +20,9 @@ class FieldService:
         """Initialize service with database session."""
         self.db = db
 
-    async def create(self, project_id: str, obj_in: FieldCreate) -> Field:
+    async def create(self, project_id: int, obj_in: FieldCreate) -> Field:
         """Create new field."""
-        field_id = str(uuid4())
         db_obj = Field(
-            id=field_id,
             project_id=project_id,
             name=obj_in.name,
             description=obj_in.description,
@@ -43,7 +41,7 @@ class FieldService:
         )
         return db_obj
 
-    async def get(self, field_id: str) -> Optional[Field]:
+    async def get(self, field_id: int) -> Optional[Field]:
         """Get field by ID."""
         result = await self.db.execute(
             select(Field).where(Field.id == field_id)
@@ -52,7 +50,7 @@ class FieldService:
 
     async def get_by_project(
         self,
-        project_id: str,
+        project_id: int,
         *,
         skip: int = 0,
         limit: int = 100,

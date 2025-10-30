@@ -8,10 +8,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
 from ...models import ModelStatus
-from ...schemas.document_label import DocumentLabel, DocumentLabelCreate, DocumentLabelUpdate
-from ...schemas.field import Field, FieldCreate, FieldUpdate
-from ...schemas.field_class import FieldClass, FieldClassCreate, FieldClassUpdate
-from ...schemas.prediction import Prediction
+from ...schemas import (
+    DocumentLabel,
+    DocumentLabelCreate,
+    DocumentLabelUpdate,
+    Field,
+    FieldCreate,
+    FieldUpdate,
+    FieldClass,
+    FieldClassCreate,
+    FieldClassUpdate,
+    Prediction,
+)
 from ...services.document_labels import DocumentLabelService
 from ...services.documents import DocumentService
 from ...services.field_classes import FieldClassService
@@ -32,7 +40,7 @@ router = APIRouter()
 )
 async def create_field(
     *,
-    project_id: str,
+    project_id: int,
     field_in: FieldCreate,
     db: AsyncSession = Depends(get_db),
 ) -> Field:
@@ -53,7 +61,7 @@ async def create_field(
 
 @router.get("/fields/{field_id}", response_model=Field, tags=["fields"])
 async def get_field(
-    field_id: str,
+    field_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> Field:
     """Get field by ID."""
@@ -72,7 +80,7 @@ async def get_field(
 )
 async def list_project_fields(
     *,
-    project_id: str,
+    project_id: int,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -95,7 +103,7 @@ async def list_project_fields(
 @router.put("/fields/{field_id}", response_model=Field, tags=["fields"])
 async def update_field(
     *,
-    field_id: str,
+    field_id: int,
     field_in: FieldUpdate,
     db: AsyncSession = Depends(get_db),
 ) -> Field:
@@ -116,7 +124,7 @@ async def update_field(
 )
 async def delete_field(
     *,
-    field_id: str,
+    field_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete field."""
@@ -140,7 +148,7 @@ async def delete_field(
 )
 async def create_field_class(
     *,
-    field_id: str,
+    field_id: int,
     class_in: FieldClassCreate,
     db: AsyncSession = Depends(get_db),
 ) -> FieldClass:
@@ -163,7 +171,7 @@ async def create_field_class(
     "/classes/{class_id}", response_model=FieldClass, tags=["field-classes"]
 )
 async def get_field_class(
-    class_id: str,
+    class_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> FieldClass:
     """Get field class by ID."""
@@ -184,7 +192,7 @@ async def get_field_class(
 )
 async def list_field_classes(
     *,
-    field_id: str,
+    field_id: int,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -209,7 +217,7 @@ async def list_field_classes(
 )
 async def update_field_class(
     *,
-    class_id: str,
+    class_id: int,
     class_in: FieldClassUpdate,
     db: AsyncSession = Depends(get_db),
 ) -> FieldClass:
@@ -232,7 +240,7 @@ async def update_field_class(
 )
 async def delete_field_class(
     *,
-    class_id: str,
+    class_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete field class."""
@@ -256,7 +264,7 @@ async def delete_field_class(
 )
 async def create_document_label(
     *,
-    document_id: str,
+    document_id: int,
     label_in: DocumentLabelCreate,
     db: AsyncSession = Depends(get_db),
 ) -> DocumentLabel:
@@ -303,7 +311,7 @@ async def create_document_label(
 
 @router.get("/labels/{label_id}", response_model=DocumentLabel, tags=["document-labels"])
 async def get_document_label(
-    label_id: str,
+    label_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> DocumentLabel:
     """Get document label by ID."""
@@ -324,7 +332,7 @@ async def get_document_label(
 )
 async def list_document_labels(
     *,
-    document_id: str,
+    document_id: int,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -351,8 +359,8 @@ async def list_document_labels(
 )
 async def get_document_label_by_field(
     *,
-    document_id: str,
-    field_id: str,
+    document_id: int,
+    field_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> DocumentLabel:
     """Get label for a specific document and field."""
@@ -369,7 +377,7 @@ async def get_document_label_by_field(
 @router.put("/labels/{label_id}", response_model=DocumentLabel, tags=["document-labels"])
 async def update_document_label(
     *,
-    label_id: str,
+    label_id: int,
     label_in: DocumentLabelUpdate,
     db: AsyncSession = Depends(get_db),
 ) -> DocumentLabel:
@@ -407,7 +415,7 @@ async def update_document_label(
 )
 async def delete_document_label(
     *,
-    label_id: str,
+    label_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete document label."""
@@ -435,7 +443,7 @@ class FieldTrainingParams(BaseModel):
 )
 async def train_field(
     *,
-    field_id: str,
+    field_id: int,
     params: Optional[FieldTrainingParams] = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -493,7 +501,7 @@ async def train_field(
 class FieldPredictionParams(BaseModel):
     """Field prediction parameters."""
 
-    document_ids: List[str]
+    document_ids: List[int]
     params: Optional[Dict] = None
 
 
@@ -503,7 +511,7 @@ class FieldPredictionParams(BaseModel):
 )
 async def predict_for_field(
     *,
-    field_id: str,
+    field_id: int,
     prediction_params: FieldPredictionParams,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -577,7 +585,7 @@ async def predict_for_field(
 )
 async def get_document_predictions(
     *,
-    document_id: str,
+    document_id: int,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -606,8 +614,8 @@ async def get_document_predictions(
 )
 async def get_document_prediction_by_field(
     *,
-    document_id: str,
-    field_id: str,
+    document_id: int,
+    field_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> Prediction:
     """Get prediction for a specific document and field."""

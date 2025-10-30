@@ -21,7 +21,7 @@ router = APIRouter()
 )
 async def trigger_indexing(
     *,
-    project_id: str,
+    project_id: int,
     is_incremental: bool = True,
     db: AsyncSession = Depends(get_db),
 
@@ -79,7 +79,7 @@ async def trigger_indexing(
 )
 async def get_index_status(
     *,
-    project_id: str,
+    project_id: int,
     db: AsyncSession = Depends(get_db),
 
 ) -> dict:

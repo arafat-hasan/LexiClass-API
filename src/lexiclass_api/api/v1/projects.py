@@ -6,13 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
-from ...schemas.project import Project, ProjectCreate, ProjectUpdate
+from ...schemas import Project, ProjectCreate, ProjectUpdate
 from ...services.projects import ProjectService
 
 router = APIRouter()
 
 
-@router.post("/", response_model=Project, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Project, status_code=status.HTTP_201_CREATED, tags=["projects"])
 async def create_project(
     *,
     project_in: ProjectCreate,
@@ -25,9 +25,9 @@ async def create_project(
     return project
 
 
-@router.get("/{project_id}", response_model=Project)
+@router.get("/{project_id}", response_model=Project, tags=["projects"])
 async def get_project(
-    project_id: str,
+    project_id: int,
     db: AsyncSession = Depends(get_db),
 
 ) -> Project:
@@ -42,7 +42,7 @@ async def get_project(
     return project
 
 
-@router.get("/", response_model=List[Project])
+@router.get("/", response_model=List[Project], tags=["projects"])
 async def list_projects(
     *,
     db: AsyncSession = Depends(get_db),
@@ -56,10 +56,10 @@ async def list_projects(
     return list(projects)
 
 
-@router.put("/{project_id}", response_model=Project)
+@router.put("/{project_id}", response_model=Project, tags=["projects"])
 async def update_project(
     *,
-    project_id: str,
+    project_id: int,
     project_in: ProjectUpdate,
     db: AsyncSession = Depends(get_db),
 
@@ -76,10 +76,10 @@ async def update_project(
     return project
 
 
-@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["projects"])
 async def delete_project(
     *,
-    project_id: str,
+    project_id: int,
     db: AsyncSession = Depends(get_db),
 
 ) -> None:

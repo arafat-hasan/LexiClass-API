@@ -8,10 +8,11 @@ from . import documents, fields, indexing, prediction, projects, tasks, training
 api_router = APIRouter()
 
 # Include routers
-api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
-api_router.include_router(documents.router, prefix="/projects", tags=["documents"])
-api_router.include_router(indexing.router, prefix="/projects", tags=["indexing"])
-api_router.include_router(training.router, prefix="/projects", tags=["training"])
-api_router.include_router(prediction.router, prefix="/projects", tags=["prediction"])
-api_router.include_router(tasks.router, tags=["tasks"])
-api_router.include_router(fields.router, tags=["fields", "field-classes", "document-labels"])
+# Note: Tags are specified in individual endpoint decorators for proper Swagger organization
+api_router.include_router(projects.router, prefix="/projects")
+api_router.include_router(documents.router, prefix="/projects")
+api_router.include_router(indexing.router, prefix="/projects")
+api_router.include_router(training.router, prefix="/projects")
+api_router.include_router(prediction.router, prefix="/projects")
+api_router.include_router(tasks.router)
+api_router.include_router(fields.router)

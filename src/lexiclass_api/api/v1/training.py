@@ -25,7 +25,7 @@ class TrainingParams(BaseModel):
 )
 async def trigger_training(
     *,
-    project_id: str,
+    project_id: int,
     params: Optional[TrainingParams] = None,
     db: AsyncSession = Depends(get_db),
 
@@ -75,7 +75,7 @@ async def trigger_training(
 )
 async def get_training_status(
     *,
-    project_id: str,
+    project_id: int,
     db: AsyncSession = Depends(get_db),
 
 ) -> dict:

@@ -2,13 +2,13 @@
 
 import logging
 from typing import Optional, Sequence
-from uuid import uuid4
+
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Prediction
-from ..schemas.prediction import PredictionCreate, PredictionUpdate
+from ..schemas import PredictionCreate, PredictionUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -36,18 +36,17 @@ class PredictionService:
                 existing,
                 PredictionUpdate(
                     class_id=obj_in.class_id,
+                    model_version=obj_in.model_version,
                     confidence=obj_in.confidence,
                     pred_metadata=obj_in.pred_metadata,
                 ),
             )
 
         # Create new prediction
-        prediction_id = str(uuid4())
         db_obj = Prediction(
-            id=prediction_id,
             document_id=obj_in.document_id,
             field_id=obj_in.field_id,
-            model_id=obj_in.model_id,
+            model_version=obj_in.model_version,
             class_id=obj_in.class_id,
             confidence=obj_in.confidence,
             pred_metadata=obj_in.pred_metadata,
@@ -59,7 +58,7 @@ class PredictionService:
         logger.info(
             "Created new prediction",
             extra={
-                "prediction_id": prediction_id,
+                "prediction_id": db_obj.id,
                 "document_id": obj_in.document_id,
                 "field_id": obj_in.field_id,
                 "class_id": obj_in.class_id,
@@ -67,7 +66,7 @@ class PredictionService:
         )
         return db_obj
 
-    async def get(self, prediction_id: str) -> Optional[Prediction]:
+    async def get(self, prediction_id: int) -> Optional[Prediction]:
         """Get prediction by ID."""
         result = await self.db.execute(
             select(Prediction).where(Prediction.id == prediction_id)
@@ -76,7 +75,7 @@ class PredictionService:
 
     async def get_by_document(
         self,
-        document_id: str,
+        document_id: int,
         *,
         skip: int = 0,
         limit: int = 100,
@@ -92,7 +91,7 @@ class PredictionService:
         return result.scalars().all()
 
     async def get_by_document_and_field(
-        self, document_id: str, field_id: str
+        self, document_id: int, field_id: int
     ) -> Optional[Prediction]:
         """Get prediction by document ID and field ID."""
         result = await self.db.execute(
@@ -104,7 +103,7 @@ class PredictionService:
 
     async def get_by_field(
         self,
-        field_id: str,
+        field_id: int,
         *,
         skip: int = 0,
         limit: int = 1000,

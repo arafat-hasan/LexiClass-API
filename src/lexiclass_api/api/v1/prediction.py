@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
 from ...core.worker import worker
-from ...schemas.document import Document
+from ...schemas import Document
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
 
@@ -20,8 +20,8 @@ router = APIRouter()
 )
 async def trigger_prediction(
     *,
-    project_id: str,
-    document_ids: Optional[List[str]] = Query(None, max_items=1000),
+    project_id: int,
+    document_ids: Optional[List[int]] = Query(None, max_items=1000),
     db: AsyncSession = Depends(get_db),
 
 ) -> dict:
@@ -79,8 +79,8 @@ async def trigger_prediction(
 )
 async def get_prediction_results(
     *,
-    project_id: str,
-    prediction_id: str,
+    project_id: int,
+    prediction_id: int,
     db: AsyncSession = Depends(get_db),
 
     skip: int = Query(0, ge=0),
@@ -136,7 +136,7 @@ async def get_prediction_results(
 )
 async def get_latest_predictions(
     *,
-    project_id: str,
+    project_id: int,
     db: AsyncSession = Depends(get_db),
 
     skip: int = Query(0, ge=0),

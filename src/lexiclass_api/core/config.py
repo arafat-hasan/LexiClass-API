@@ -107,7 +107,7 @@ class Settings(BaseSettings):
     # Storage
     STORAGE_PATH: Path = Path("/data")
 
-    def get_project_storage_path(self, project_id: str) -> Path:
+    def get_project_storage_path(self, project_id: int) -> Path:
         """Get the base storage path for a project.
 
         Args:
@@ -116,9 +116,9 @@ class Settings(BaseSettings):
         Returns:
             Path to project storage directory
         """
-        return self.STORAGE_PATH / project_id
+        return self.STORAGE_PATH / f"{project_id}"
 
-    def get_models_path(self, project_id: str) -> Path:
+    def get_models_path(self, project_id: int) -> Path:
         """Get the models path for a project.
 
         Args:
@@ -129,7 +129,7 @@ class Settings(BaseSettings):
         """
         return self.get_project_storage_path(project_id) / "models"
 
-    def get_indexes_path(self, project_id: str) -> Path:
+    def get_indexes_path(self, project_id: int) -> Path:
         """Get the indexes path for a project.
 
         Args:
@@ -140,7 +140,7 @@ class Settings(BaseSettings):
         """
         return self.get_project_storage_path(project_id) / "indexes"
 
-    def get_documents_path(self, project_id: str) -> Path:
+    def get_documents_path(self, project_id: int) -> Path:
         """Get the documents path for a project.
 
         Args:

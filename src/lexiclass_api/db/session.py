@@ -1,39 +1,23 @@
-"""Database session management."""
+"""Database session management - uses Core's session factory."""
 
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession
+from lexiclass_core.db.session import get_db_session, init_db
 
 from ..core.config import settings
 
-engine: AsyncEngine = create_async_engine(
-    str(settings.DATABASE_URI),
-    pool_pre_ping=True,
-    echo=settings.DEBUG,
-)
 
-async_session = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-)
+def initialize_database() -> None:
+    """Initialize database connection using Core's session factory."""
+    init_db(str(settings.DATABASE_URI))
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, Any]:
-    """Dependency for database session."""
-    async with async_session() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+    """Dependency for database session.
+
+    Uses the shared database session from lexiclass_core.
+    """
+    async with get_db_session() as session:
+        yield session

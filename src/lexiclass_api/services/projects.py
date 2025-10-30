@@ -2,13 +2,12 @@
 
 import logging
 from typing import Optional, Sequence
-from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Project
-from ..schemas.project import ProjectCreate, ProjectUpdate
+from ..schemas import ProjectCreate, ProjectUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +21,7 @@ class ProjectService:
 
     async def create(self, obj_in: ProjectCreate) -> Project:
         """Create new project."""
-        project_id = str(uuid4())
         db_obj = Project(
-            id=project_id,
             name=obj_in.name,
             description=obj_in.description,
             config=obj_in.config,
@@ -32,17 +29,17 @@ class ProjectService:
         self.db.add(db_obj)
         await self.db.commit()
         await self.db.refresh(db_obj)
-        
+
         logger.info(
             "Created new project",
             extra={
-                "project_id": project_id,
+                "project_id": db_obj.id,
                 "name": obj_in.name,
             },
         )
         return db_obj
 
-    async def get(self, project_id: str) -> Optional[Project]:
+    async def get(self, project_id: int) -> Optional[Project]:
         """Get project by ID."""
         result = await self.db.execute(
             select(Project).where(Project.id == project_id)
@@ -101,7 +98,7 @@ class ProjectService:
 
     async def update_status(
         self,
-        project_id: str,
+        project_id: int,
         status: str,
         *,
         index_status: Optional[str] = None,

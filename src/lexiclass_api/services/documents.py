@@ -1,7 +1,6 @@
 """Document service."""
 
 from typing import List, Optional, Sequence
-import uuid
 
 # Service constants
 MAX_PAGE_SIZE = 1000  # Maximum number of documents per page
@@ -14,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..models import Document as DocumentModel, IndexStatus
-from ..schemas.document import DocumentBulkCreate, Document
+from ..schemas import DocumentBulkCreate, Document
 
 
 class DocumentService:
@@ -28,7 +27,7 @@ class DocumentService:
         """
         self.db = db
 
-    async def _check_existing_ids(self, document_ids: List[str]) -> None:
+    async def _check_existing_ids(self, document_ids: List[int]) -> None:
         """Check if any of the document IDs already exist.
 
         Args:
@@ -54,7 +53,7 @@ class DocumentService:
             )
 
     async def create_bulk(
-        self, project_id: str, documents_in: DocumentBulkCreate
+        self, project_id: int, documents_in: DocumentBulkCreate
     ) -> List[Document]:
         """Create multiple documents.
 
@@ -92,23 +91,46 @@ class DocumentService:
 
             # Create document models with content already stored
             db_documents = []
+            docs_with_id = []  # Documents with provided IDs
+
             for doc in documents_in.documents:
-                doc_id = doc.id or str(uuid.uuid4())
+                # For new documents without ID, we need to create the record first to get auto-generated ID
+                # Then store content using that ID
+                if doc.id is not None:
+                    # ID provided, use it directly
+                    doc_id = doc.id
+                    path = document_storage.store_document(project_id, doc_id, doc.content)
 
-                # Store content and get path BEFORE creating model
-                path = document_storage.store_document(project_id, doc_id, doc.content)
+                    db_doc = DocumentModel(
+                        project_id=project_id,
+                        id=doc_id,
+                        content_path=str(path),
+                        doc_metadata=doc.metadata,
+                        index_status=IndexStatus.PENDING,
+                    )
+                    docs_with_id.append(db_doc)
+                    db_documents.append(db_doc)
+                else:
+                    # No ID provided, create record first to get auto-generated ID
+                    # Store with temporary path, then update after getting ID
+                    db_doc = DocumentModel(
+                        project_id=project_id,
+                        content_path="",  # Temporary, will be updated
+                        doc_metadata=doc.metadata,
+                        index_status=IndexStatus.PENDING,
+                    )
+                    self.db.add(db_doc)
+                    await self.db.flush()  # Get the auto-generated ID
 
-                db_doc = DocumentModel(
-                    project_id=project_id,
-                    id=doc_id,
-                    content_path=str(path),
-                    doc_metadata=doc.metadata,
-                    index_status=IndexStatus.PENDING,
-                )
-                db_documents.append(db_doc)
+                    # Now store content with actual ID
+                    path = document_storage.store_document(project_id, db_doc.id, doc.content)
+                    db_doc.content_path = str(path)
+                    db_documents.append(db_doc)
 
-            # Add to DB and commit (content already stored, so no async issues)
-            self.db.add_all(db_documents)
+            # Add documents with provided IDs (documents without ID are already in session)
+            if docs_with_id:
+                self.db.add_all(docs_with_id)
+
             await self.db.commit()
 
             # Don't refresh - we already have all the data we need
@@ -123,7 +145,7 @@ class DocumentService:
 
     async def get_multi(
         self,
-        project_id: str,
+        project_id: int,
         *,
         skip: int = 0,
         limit: int = DEFAULT_PAGE_SIZE,
@@ -190,7 +212,7 @@ class DocumentService:
 
     async def count(
         self,
-        project_id: str,
+        project_id: int,
         *,
         label: Optional[str] = None,
         index_status: Optional[IndexStatus] = None,
@@ -231,7 +253,7 @@ class DocumentService:
                 detail=f"Database error while counting documents: {str(e)}"
             ) from e
 
-    async def get_by_id(self, document_id: str) -> Optional[Document]:
+    async def get_by_id(self, document_id: int) -> Optional[Document]:
         """Get document by ID.
 
         Args:
@@ -303,7 +325,7 @@ class DocumentService:
             'updated_at': doc.updated_at,
         })
 
-    async def get_multi_by_ids(self, project_id: str, document_ids: List[str]) -> Sequence[Document]:
+    async def get_multi_by_ids(self, project_id: int, document_ids: List[int]) -> Sequence[Document]:
         """Get multiple documents by their IDs.
 
         Args:
@@ -323,7 +345,7 @@ class DocumentService:
 
         return [self._convert_to_pydantic_simple(doc) for doc in documents]
 
-    async def delete_multi(self, project_id: str, document_ids: List[str]) -> None:
+    async def delete_multi(self, project_id: int, document_ids: List[int]) -> None:
         """Delete multiple documents.
 
         Args:

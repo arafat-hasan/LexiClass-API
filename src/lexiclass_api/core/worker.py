@@ -178,7 +178,7 @@ class WorkerClient:
 
     def index_documents(
         self,
-        project_id: str,
+        project_id: int,
         documents_path: str,
         is_incremental: bool = True,
     ) -> AsyncResult:
@@ -202,7 +202,7 @@ class WorkerClient:
     def train_field_model(
         self,
         field_id: str,
-        project_id: str,
+        project_id: int,
     ) -> AsyncResult:
         """Submit field model training task to worker.
 
@@ -222,7 +222,7 @@ class WorkerClient:
     def predict_field_documents(
         self,
         field_id: str,
-        project_id: str,
+        project_id: int,
         document_ids: List[str],
     ) -> AsyncResult:
         """Submit field prediction task to worker.

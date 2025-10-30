@@ -2,13 +2,13 @@
 
 import logging
 from typing import Optional, Sequence
-from uuid import uuid4
+
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import DocumentLabel
-from ..schemas.document_label import DocumentLabelCreate, DocumentLabelUpdate
+from ..schemas import DocumentLabelCreate, DocumentLabelUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class DocumentLabelService:
         self.db = db
 
     async def create(
-        self, document_id: str, obj_in: DocumentLabelCreate
+        self, document_id: int, obj_in: DocumentLabelCreate
     ) -> DocumentLabel:
         """Create new document label.
 
@@ -43,9 +43,7 @@ class DocumentLabelService:
             )
 
         # Create new label
-        label_id = str(uuid4())
         db_obj = DocumentLabel(
-            id=label_id,
             document_id=document_id,
             field_id=obj_in.field_id,
             class_id=obj_in.class_id,
@@ -58,7 +56,7 @@ class DocumentLabelService:
         logger.info(
             "Created new document label",
             extra={
-                "label_id": label_id,
+                "label_id": db_obj.id,
                 "document_id": document_id,
                 "field_id": obj_in.field_id,
                 "class_id": obj_in.class_id,
@@ -66,7 +64,7 @@ class DocumentLabelService:
         )
         return db_obj
 
-    async def get(self, label_id: str) -> Optional[DocumentLabel]:
+    async def get(self, label_id: int) -> Optional[DocumentLabel]:
         """Get document label by ID."""
         result = await self.db.execute(
             select(DocumentLabel).where(DocumentLabel.id == label_id)
@@ -75,7 +73,7 @@ class DocumentLabelService:
 
     async def get_by_document(
         self,
-        document_id: str,
+        document_id: int,
         *,
         skip: int = 0,
         limit: int = 100,
@@ -91,7 +89,7 @@ class DocumentLabelService:
         return result.scalars().all()
 
     async def get_by_document_and_field(
-        self, document_id: str, field_id: str
+        self, document_id: int, field_id: int
     ) -> Optional[DocumentLabel]:
         """Get label by document ID and field ID."""
         result = await self.db.execute(
@@ -103,7 +101,7 @@ class DocumentLabelService:
 
     async def get_by_field(
         self,
-        field_id: str,
+        field_id: int,
         *,
         is_training_data: Optional[bool] = None,
         skip: int = 0,

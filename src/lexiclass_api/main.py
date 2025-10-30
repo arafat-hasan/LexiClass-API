@@ -31,6 +31,12 @@ async def lifespan(app: FastAPI):
     # Setup
     logger = logging.getLogger(__name__)
     logger.info("Starting application")
+
+    # Initialize database using Core's session factory
+    from .db.session import initialize_database
+    initialize_database()
+    logger.info("Database initialized")
+
     yield
     # Cleanup
     logger.info("Shutting down application")

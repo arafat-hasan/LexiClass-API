@@ -1,0 +1,137 @@
+"""Schemas package - re-exports schemas from lexiclass_core.
+
+All Pydantic schemas are now defined in lexiclass_core and re-exported here
+for backward compatibility with existing API code.
+"""
+
+from lexiclass_core.schemas import (
+    # Task payload schemas
+    IndexDocumentsInput,
+    IndexDocumentsOutput,
+    TrainFieldModelInput,
+    TrainFieldModelOutput,
+    PredictFieldDocumentsInput,
+    PredictFieldDocumentsOutput,
+    TaskResult,
+    # Project schemas
+    ProjectBase,
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectInDBBase,
+    Project,
+    ProjectInDB,
+    # Document schemas
+    DocumentBase,
+    DocumentCreate,
+    DocumentUpdate,
+    DocumentInDBBase,
+    Document,
+    DocumentInDB,
+    DocumentBulkCreate,
+    # Field schemas
+    FieldBase,
+    FieldCreate,
+    FieldUpdate,
+    FieldInDBBase,
+    Field,
+    FieldInDB,
+    # FieldClass schemas
+    FieldClassBase,
+    FieldClassCreate,
+    FieldClassUpdate,
+    FieldClassInDBBase,
+    FieldClass,
+    FieldClassInDB,
+    # Model schemas
+    ModelInDBBase,
+    Model,
+    ModelInDB,
+    ModelCreate,
+    ModelUpdate,
+    # Prediction schemas
+    PredictionInDBBase,
+    Prediction,
+    PredictionInDB,
+    PredictionCreate,
+    PredictionUpdate,
+    # DocumentLabel schemas
+    DocumentLabelCreate,
+    DocumentLabelUpdate,
+    DocumentLabelInDBBase,
+    DocumentLabel,
+    DocumentLabelInDB,
+    # Task schemas
+    TaskBase,
+    TaskCreate,
+    TaskUpdate,
+    TaskInDBBase,
+    Task,
+    TaskInDB,
+    TaskStatus,
+)
+
+__all__ = [
+    # Task payload schemas
+    "IndexDocumentsInput",
+    "IndexDocumentsOutput",
+    "TrainFieldModelInput",
+    "TrainFieldModelOutput",
+    "PredictFieldDocumentsInput",
+    "PredictFieldDocumentsOutput",
+    "TaskResult",
+    # Project schemas
+    "ProjectBase",
+    "ProjectCreate",
+    "ProjectUpdate",
+    "ProjectInDBBase",
+    "Project",
+    "ProjectInDB",
+    # Document schemas
+    "DocumentBase",
+    "DocumentCreate",
+    "DocumentUpdate",
+    "DocumentInDBBase",
+    "Document",
+    "DocumentInDB",
+    "DocumentBulkCreate",
+    # Field schemas
+    "FieldBase",
+    "FieldCreate",
+    "FieldUpdate",
+    "FieldInDBBase",
+    "Field",
+    "FieldInDB",
+    # FieldClass schemas
+    "FieldClassBase",
+    "FieldClassCreate",
+    "FieldClassUpdate",
+    "FieldClassInDBBase",
+    "FieldClass",
+    "FieldClassInDB",
+    # Model schemas
+    "ModelInDBBase",
+    "Model",
+    "ModelInDB",
+    "ModelCreate",
+    "ModelUpdate",
+    # Prediction schemas
+    "PredictionInDBBase",
+    "Prediction",
+    "PredictionInDB",
+    "PredictionCreate",
+    "PredictionUpdate",
+    # DocumentLabel schemas
+    "DocumentLabelCreate",
+    "DocumentLabelUpdate",
+    "DocumentLabelInDBBase",
+    "DocumentLabel",
+    "DocumentLabelInDB",
+    # Task schemas
+    "TaskBase",
+    "TaskCreate",
+    "TaskUpdate",
+    "TaskInDBBase",
+    "Task",
+    "TaskInDB",
+    "TaskStatus",
+]
