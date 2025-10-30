@@ -24,30 +24,27 @@ Lexiclass is a distributed ML-driven document classification platform built with
 └────────────┬─────────────┘
              │ REST API
              ▼
-┌──────────────────────────┐
-│      Lexiclass-API       │
-│ - FastAPI service        │
-│ - Uses Lexiclass-Core    │
-│ - Submits jobs to Redis  │
-└───────┬──────────────────┘
-        │ Celery Task Queue
-        ▼
-┌──────────────────────────┐
-│     Redis (Broker)       │
-└───────┬──────────────────┘
-        │
-        ▼
-┌──────────────────────────┐
+┌────────────────────────────┐
+│      Lexiclass-API         │
+│ - FastAPI service          │
+│ - Uses Lexiclass-Core      │
+│ - Submits jobs to Redis    │
+└───────┬──────────────┬─────┘
+ Celery │              │
+ Task   │              │
+ Queue  │              │
+        ▼              ▼
+┌──────────┐   ┌──────────────────────────┐
+│ Redis    │   │    PostgreSQL Database   │
+│ (Broker) │   │ - Shared via Core models │
+└──────┬───┘   └──────────────────────────┘
+       │               ▲        
+       ▼               │ 
+┌──────────────────────┴───┐
 │    Lexiclass-Worker      │
 │ - Celery worker process  │
 │ - Executes ML tasks      │
 │ - Uses Lexiclass + Core  │
-└───────┬──────────────────┘
-        │
-        ▼
-┌──────────────────────────┐
-│    PostgreSQL Database   │
-│ - Shared via Core models │
 └──────────────────────────┘
 ```
 
