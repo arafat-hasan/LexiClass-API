@@ -51,13 +51,26 @@ Lexiclass is a distributed ML-driven document classification platform built with
 ## Dependency Graph
 
 ```
-Lexiclass-Core (Foundation)
-    ↑
-    ├── Lexiclass (ML Library)
-    ↑
-    ├── Lexiclass-API
-    │
-    └── Lexiclass-Worker
+Lexiclass (Independent ML Library)
+└── Standalone, stateless ML logic
+    (tokenize, index, train, predict)
+
+
+Lexiclass-Core (Foundation Layer)
+├── Defines ORM Models, Schemas, Configs, and Utilities
+└── Acts as the shared data contract for all services
+      ↑
+      │
+      ├── Lexiclass-API
+      │    ├── Uses Core ORM models and Schemas
+      │    ├── Exposes REST endpoints
+      │    └── Dispatches ML tasks to Worker
+      │
+      └── Lexiclass-Worker
+           ├── Depends on Core for ORM/Schemas
+           ├── Imports Lexiclass ML Library for task execution
+           └── Persists results via Core models
+
 ```
 
 ### Dependency Details
@@ -67,7 +80,6 @@ Lexiclass-Core (Foundation)
   - Single source of truth for data structures
 
 - **Lexiclass (ML Library)**: Standalone ML logic
-  - Optionally imports schema constants from Core
   - Pure ML operations, stateless
 
 - **Lexiclass-API**: Depends on Core
