@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.deps import get_db
 from ...models import IndexStatus
-from ...schemas import Document, DocumentBulkCreate
+from ...schemas import (
+    Document,
+    DocumentBulkCreate,
+    DocumentBulkDelete,
+    DocumentBulkDeleteResponse,
+)
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
 
@@ -141,3 +146,50 @@ async def delete_documents(
     # Delete documents
     service = DocumentService(db)
     await service.delete_multi(project_id, document_ids)
+
+
+@router.post(
+    "/{project_id}/documents/bulk-delete",
+    response_model=DocumentBulkDeleteResponse,
+    status_code=status.HTTP_200_OK,
+    tags=["documents"],
+)
+async def bulk_delete_documents(
+    *,
+    project_id: int,
+    delete_request: DocumentBulkDelete,
+    db: AsyncSession = Depends(get_db),
+) -> DocumentBulkDeleteResponse:
+    """Bulk delete documents from a project with detailed tracking.
+
+    This endpoint allows deleting multiple documents by providing either:
+    - A list of specific document IDs (up to 1000)
+    - Ranges of document IDs (up to 10 ranges)
+    - Or both
+
+    The response includes detailed information about which deletions succeeded
+    and which failed, along with error messages for failures.
+
+    Args:
+        project_id: Project ID
+        delete_request: Bulk delete request with document IDs and/or ranges
+        db: Database session
+
+    Returns:
+        DocumentBulkDeleteResponse with detailed results
+
+    Raises:
+        HTTPException: If project not found or validation fails
+    """
+    # Verify project exists
+    project_service = ProjectService(db)
+    project = await project_service.get(project_id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
+
+    # Delete documents with detailed tracking
+    service = DocumentService(db)
+    return await service.delete_bulk(project_id, delete_request)

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core.deps import get_db
 from ...core.worker import worker, TaskResult
 from ...core.config import settings
-from ...models import IndexStatus
+from ...models import IndexStatus, ProjectIndexStatus
 from ...services.documents import DocumentService
 from ...services.projects import ProjectService
 
@@ -48,6 +48,9 @@ async def trigger_indexing(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found",
         )
+
+    # Update project index_status to IN_PROGRESS
+    project.index_status = ProjectIndexStatus.IN_PROGRESS
 
     # Update all documents index_status to pending
     doc_service = DocumentService(db)
@@ -112,8 +115,16 @@ async def get_index_status(
     pending = await doc_service.count(project_id, index_status=IndexStatus.PENDING)
     failed = await doc_service.count(project_id, index_status=IndexStatus.FAILED)
 
+    # Determine overall status
+    if project.index_status:
+        overall_status = project.index_status.value
+    else:
+        overall_status = "not_started"
+
     return {
-        "status": "valid" if indexed > 0 else "missing",
+        "status": overall_status,
+        "project_index_status": project.index_status.value if project.index_status else None,
+        "last_indexed_at": project.last_indexed_at.isoformat() if project.last_indexed_at else None,
         "total_documents": total,
         "indexed_documents": indexed,
         "pending_documents": pending,

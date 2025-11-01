@@ -15,6 +15,7 @@ from lexiclass_core.models import (
     ModelStatus,
     Prediction,
     Project,
+    ProjectIndexStatus,
     Task,
 )
 
@@ -29,5 +30,6 @@ __all__ = [
     "ModelStatus",
     "Prediction",
     "Project",
+    "ProjectIndexStatus",
     "Task",
 ]

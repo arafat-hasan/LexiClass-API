@@ -1,14 +1,24 @@
 """DocumentLabel service layer."""
 
 import logging
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import DocumentLabel
-from ..schemas import DocumentLabelCreate, DocumentLabelUpdate
+from ..schemas import (
+    DocumentLabelCreate,
+    DocumentLabelUpdate,
+    DocumentLabelBulkCreate,
+    DocumentLabelBulkResponse,
+    LabelOperationResult,
+    DocumentLabelBulkDelete,
+    DocumentLabelBulkDeleteResponse,
+    LabelDeletionResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -151,4 +161,173 @@ class DocumentLabelService:
         logger.info(
             "Deleted document label",
             extra={"label_id": label_id},
+        )
+
+    async def create_bulk(
+        self, bulk_create: DocumentLabelBulkCreate
+    ) -> DocumentLabelBulkResponse:
+        """Create multiple document labels with detailed tracking.
+
+        Args:
+            bulk_create: Bulk create request with field_id and labels
+
+        Returns:
+            DocumentLabelBulkResponse with detailed results
+
+        Raises:
+            HTTPException: If validation fails
+        """
+        if not bulk_create.labels:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No labels provided for bulk creation"
+            )
+
+        if len(bulk_create.labels) > 1000:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Too many labels requested: {len(bulk_create.labels)}. Maximum is 1000."
+            )
+
+        # Track results
+        results: List[LabelOperationResult] = []
+        successful_count = 0
+        failed_count = 0
+
+        # Process each label
+        for label_item in bulk_create.labels:
+            try:
+                # Create DocumentLabelCreate instance
+                label_create = DocumentLabelCreate(
+                    field_id=bulk_create.field_id,
+                    class_id=label_item.class_id,
+                    is_training_data=label_item.is_training_data
+                )
+
+                # Create or update the label
+                await self.create(label_item.document_id, label_create)
+
+                successful_count += 1
+                results.append(
+                    LabelOperationResult(
+                        document_id=label_item.document_id,
+                        success=True,
+                        error=None
+                    )
+                )
+
+            except Exception as e:
+                # Individual label creation failed
+                failed_count += 1
+                results.append(
+                    LabelOperationResult(
+                        document_id=label_item.document_id,
+                        success=False,
+                        error=str(e)
+                    )
+                )
+
+        return DocumentLabelBulkResponse(
+            total_requested=len(bulk_create.labels),
+            successful=successful_count,
+            failed=failed_count,
+            results=results
+        )
+
+    async def delete_bulk(
+        self, delete_request: DocumentLabelBulkDelete
+    ) -> DocumentLabelBulkDeleteResponse:
+        """Delete multiple labels with detailed tracking.
+
+        Args:
+            delete_request: Bulk delete request with IDs and/or ranges
+
+        Returns:
+            DocumentLabelBulkDeleteResponse with detailed results
+
+        Raises:
+            HTTPException: If validation fails
+        """
+        # Collect all label IDs to delete
+        label_ids_to_delete = set()
+
+        # Add individual IDs
+        if delete_request.label_ids:
+            label_ids_to_delete.update(delete_request.label_ids)
+
+        # Add IDs from ranges
+        if delete_request.ranges:
+            for range_obj in delete_request.ranges:
+                if range_obj.start > range_obj.end:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Invalid range: start ({range_obj.start}) must be <= end ({range_obj.end})"
+                    )
+                # Add all IDs in range (inclusive)
+                label_ids_to_delete.update(range(range_obj.start, range_obj.end + 1))
+
+        # Validate that at least one deletion method is provided
+        if not label_ids_to_delete:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No label IDs or ranges provided for deletion"
+            )
+
+        # Limit total labels to delete
+        if len(label_ids_to_delete) > 1000:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Too many labels requested for deletion: {len(label_ids_to_delete)}. Maximum is 1000."
+            )
+
+        # Track results
+        results: List[LabelDeletionResult] = []
+        successful_count = 0
+        failed_count = 0
+
+        # Process each label
+        for label_id in label_ids_to_delete:
+            try:
+                # Try to find and delete the label
+                label = await self.get(label_id)
+
+                if label is None:
+                    # Label not found
+                    failed_count += 1
+                    results.append(
+                        LabelDeletionResult(
+                            label_id=label_id,
+                            success=False,
+                            error="Label not found"
+                        )
+                    )
+                else:
+                    # Delete the label
+                    await self.delete(label)
+
+                    successful_count += 1
+                    results.append(
+                        LabelDeletionResult(
+                            label_id=label_id,
+                            success=True,
+                            error=None
+                        )
+                    )
+
+            except Exception as e:
+                # Individual deletion failed
+                failed_count += 1
+                results.append(
+                    LabelDeletionResult(
+                        label_id=label_id,
+                        success=False,
+                        error=str(e)
+                    )
+                )
+
+        return DocumentLabelBulkDeleteResponse(
+            total_requested=len(label_ids_to_delete),
+            successful=successful_count,
+            failed=failed_count,
+            results=results
         )

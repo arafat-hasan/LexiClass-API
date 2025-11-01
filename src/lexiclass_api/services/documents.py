@@ -13,7 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
 from ..models import Document as DocumentModel, IndexStatus
-from ..schemas import DocumentBulkCreate, Document
+from ..schemas import (
+    DocumentBulkCreate,
+    Document,
+    DocumentBulkDelete,
+    DocumentBulkDeleteResponse,
+    DocumentDeletionResult,
+)
 
 
 class DocumentService:
@@ -359,6 +365,8 @@ class DocumentService:
             HTTPException: If there's a database error during deletion
         """
         try:
+            from ..core.storage import document_storage
+
             # Delete documents
             query = (
                 select(DocumentModel)
@@ -369,7 +377,10 @@ class DocumentService:
             documents = result.scalars().all()
 
             for doc in documents:
+                # Delete from database
                 await self.db.delete(doc)
+                # Delete file from storage
+                document_storage.delete_document(project_id, doc.id)
 
             await self.db.commit()
         except SQLAlchemyError as e:
@@ -378,3 +389,124 @@ class DocumentService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error while deleting documents: {str(e)}"
             ) from e
+
+    async def delete_bulk(
+        self, project_id: int, delete_request: DocumentBulkDelete
+    ) -> DocumentBulkDeleteResponse:
+        """Delete multiple documents with detailed tracking.
+
+        Args:
+            project_id: Project ID
+            delete_request: Bulk delete request with IDs and/or ranges
+
+        Returns:
+            DocumentBulkDeleteResponse with detailed results
+
+        Raises:
+            HTTPException: If validation fails
+        """
+        from ..core.storage import document_storage
+
+        # Collect all document IDs to delete
+        document_ids_to_delete = set()
+
+        # Add individual IDs
+        if delete_request.document_ids:
+            document_ids_to_delete.update(delete_request.document_ids)
+
+        # Add IDs from ranges
+        if delete_request.ranges:
+            for range_obj in delete_request.ranges:
+                if range_obj.start > range_obj.end:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Invalid range: start ({range_obj.start}) must be <= end ({range_obj.end})"
+                    )
+                # Add all IDs in range (inclusive)
+                document_ids_to_delete.update(range(range_obj.start, range_obj.end + 1))
+
+        # Validate that at least one deletion method is provided
+        if not document_ids_to_delete:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No document IDs or ranges provided for deletion"
+            )
+
+        # Limit total documents to delete
+        if len(document_ids_to_delete) > 1000:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Too many documents requested for deletion: {len(document_ids_to_delete)}. Maximum is 1000."
+            )
+
+        # Track results
+        results: List[DocumentDeletionResult] = []
+        successful_count = 0
+        failed_count = 0
+
+        # Process each document
+        for doc_id in document_ids_to_delete:
+            try:
+                # Try to find and delete the document
+                query = (
+                    select(DocumentModel)
+                    .where(DocumentModel.project_id == project_id)
+                    .where(DocumentModel.id == doc_id)
+                )
+                result = await self.db.execute(query)
+                doc = result.scalar_one_or_none()
+
+                if doc is None:
+                    # Document not found
+                    failed_count += 1
+                    results.append(
+                        DocumentDeletionResult(
+                            document_id=doc_id,
+                            success=False,
+                            error="Document not found"
+                        )
+                    )
+                else:
+                    # Delete from database
+                    await self.db.delete(doc)
+                    await self.db.flush()  # Flush to catch any DB errors
+
+                    # Delete file from storage
+                    storage_deleted = document_storage.delete_document(project_id, doc_id)
+
+                    successful_count += 1
+                    results.append(
+                        DocumentDeletionResult(
+                            document_id=doc_id,
+                            success=True,
+                            error=None
+                        )
+                    )
+
+            except Exception as e:
+                # Individual deletion failed
+                failed_count += 1
+                results.append(
+                    DocumentDeletionResult(
+                        document_id=doc_id,
+                        success=False,
+                        error=str(e)
+                    )
+                )
+
+        # Commit all successful deletions
+        try:
+            await self.db.commit()
+        except SQLAlchemyError as e:
+            await self.db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Database error while committing deletions: {str(e)}"
+            ) from e
+
+        return DocumentBulkDeleteResponse(
+            total_requested=len(document_ids_to_delete),
+            successful=successful_count,
+            failed=failed_count,
+            results=results
+        )

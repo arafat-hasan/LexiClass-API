@@ -12,6 +12,10 @@ from ...schemas import (
     DocumentLabel,
     DocumentLabelCreate,
     DocumentLabelUpdate,
+    DocumentLabelBulkCreate,
+    DocumentLabelBulkResponse,
+    DocumentLabelBulkDelete,
+    DocumentLabelBulkDeleteResponse,
     Field,
     FieldCreate,
     FieldUpdate,
@@ -427,6 +431,83 @@ async def delete_document_label(
             detail="Document label not found",
         )
     await service.delete(label)
+
+
+@router.post(
+    "/labels/bulk",
+    response_model=DocumentLabelBulkResponse,
+    status_code=status.HTTP_200_OK,
+    tags=["document-labels"],
+)
+async def bulk_create_document_labels(
+    *,
+    bulk_create: DocumentLabelBulkCreate,
+    db: AsyncSession = Depends(get_db),
+) -> DocumentLabelBulkResponse:
+    """Bulk create or update document labels with detailed tracking.
+
+    This endpoint allows labeling multiple documents at once for a specific field.
+    Maximum 1000 labels per request.
+
+    If a label already exists for a document and field combination, it will be updated.
+
+    Args:
+        bulk_create: Bulk label creation request with field_id and labels
+        db: Database session
+
+    Returns:
+        DocumentLabelBulkResponse with detailed results
+
+    Raises:
+        HTTPException: If validation fails
+    """
+    # Verify field exists
+    field_service = FieldService(db)
+    field = await field_service.get(bulk_create.field_id)
+    if not field:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Field not found",
+        )
+
+    # Create labels in bulk
+    service = DocumentLabelService(db)
+    return await service.create_bulk(bulk_create)
+
+
+@router.post(
+    "/labels/bulk-delete",
+    response_model=DocumentLabelBulkDeleteResponse,
+    status_code=status.HTTP_200_OK,
+    tags=["document-labels"],
+)
+async def bulk_delete_document_labels(
+    *,
+    delete_request: DocumentLabelBulkDelete,
+    db: AsyncSession = Depends(get_db),
+) -> DocumentLabelBulkDeleteResponse:
+    """Bulk delete document labels with detailed tracking.
+
+    This endpoint allows deleting multiple labels by providing either:
+    - A list of specific label IDs (up to 1000)
+    - Ranges of label IDs (up to 10 ranges)
+    - Or both
+
+    The response includes detailed information about which deletions succeeded
+    and which failed, along with error messages for failures.
+
+    Args:
+        delete_request: Bulk delete request with label IDs and/or ranges
+        db: Database session
+
+    Returns:
+        DocumentLabelBulkDeleteResponse with detailed results
+
+    Raises:
+        HTTPException: If validation fails
+    """
+    service = DocumentLabelService(db)
+    return await service.delete_bulk(delete_request)
 
 
 # Field Training Endpoints

@@ -42,12 +42,30 @@ async def get_task_status(
         )
 
     # Return task status
-    return {
+    # Handle different task states
+    response = {
         "task_id": task.id,
         "status": task.status,
-        "result": task.result if task.ready() else None,
-        "error": str(task.result) if task.failed() else None,
     }
+
+    if task.failed():
+        # Extract error message from exception
+        error_msg = str(task.result)
+        # If it's an exception object, get the message
+        if hasattr(task.result, 'args') and task.result.args:
+            error_msg = str(task.result.args[0])
+        response["error"] = error_msg
+        response["result"] = None
+    elif task.ready():
+        # Task completed successfully
+        response["result"] = task.result
+        response["error"] = None
+    else:
+        # Task is pending or running
+        response["result"] = None
+        response["error"] = None
+
+    return response
 
 
 @router.get(
